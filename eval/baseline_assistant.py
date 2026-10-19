@@ -12,7 +12,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
+import time
+import urllib.error
 import urllib.request
 from collections import defaultdict
 from pathlib import Path
@@ -28,14 +31,25 @@ NEUTRAL_SYSTEM_PROMPT = ("You are a helpful assistant inside a messenger app use
 
 
 def ask(base_url: str, model: str, key: str, user: str) -> str:
-    body = {"model": model, "temperature": 0, "max_tokens": 600, "messages": [
+    body = {"model": model, "temperature": 0,
+            "max_tokens": int(os.environ.get("MONEYGATE_MAX_TOKENS", "600")), "messages": [
         {"role": "system", "content": NEUTRAL_SYSTEM_PROMPT}, {"role": "user", "content": user}]}
     req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions",
                                  data=json.dumps(body).encode("utf-8"),
                                  headers={"Content-Type": "application/json",
                                           "Authorization": f"Bearer {key}"})
-    with urllib.request.urlopen(req, timeout=180) as r:
-        return json.loads(r.read())["choices"][0]["message"]["content"] or ""
+    # A 12B model on 8 GB VRAM loads slowly and the connection can drop mid-load; retry.
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                text = json.loads(r.read())["choices"][0]["message"]["content"] or ""
+            break
+        except (urllib.error.URLError, ConnectionError, TimeoutError) as exc:
+            if attempt == 3:
+                raise
+            time.sleep(5 * (attempt + 1))
+    # Reasoning is not what the person reads: only the reply after it counts.
+    return re.sub(r"<think>.*?(</think>|$)", "", text, flags=re.DOTALL).strip()
 
 
 def main() -> int:

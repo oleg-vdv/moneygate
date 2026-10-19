@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -122,7 +123,7 @@ def parse_verdict(text: str, model: str | None = None) -> Verdict:
 class OpenAICompatJudge:
     def __init__(self, base_url: str, model: str, api_key: str | None = None,
                  timeout: float = 120.0, temperature: float = 0.0,
-                 json_mode: bool = True) -> None:
+                 json_mode: bool = True, max_tokens: int = 1000) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.api_key = api_key or ""
@@ -130,6 +131,7 @@ class OpenAICompatJudge:
         self.temperature = temperature
         # Constrained JSON output: small local models otherwise break quoting inside evidence.
         self.json_mode = json_mode
+        self.max_tokens = max_tokens  # reasoning models need more: they think before the JSON
 
     @classmethod
     def from_env(cls) -> "OpenAICompatJudge":
@@ -139,6 +141,7 @@ class OpenAICompatJudge:
             model=os.environ.get("MONEYGATE_MODEL", "muse-spark-1.1"),
             api_key=os.environ.get("MONEYGATE_API_KEY") or os.environ.get("MODEL_API_KEY"),
             json_mode=os.environ.get("MONEYGATE_JSON_MODE", "1") != "0",
+            max_tokens=int(os.environ.get("MONEYGATE_MAX_TOKENS", "1000")),
         )
 
     def review(self, conversation: str, action: ProposedAction) -> Verdict:
@@ -146,7 +149,7 @@ class OpenAICompatJudge:
             "model": self.model,
             "temperature": self.temperature,
             # A verdict fits in ~300 tokens; the cap stops JSON-mode whitespace loops.
-            "max_tokens": 1000,
+            "max_tokens": self.max_tokens,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": render_request(conversation, action)},
@@ -161,14 +164,20 @@ class OpenAICompatJudge:
                      "Authorization": f"Bearer {self.api_key}"},
             method="POST",
         )
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-            text = payload["choices"][0]["message"]["content"] or ""
-        except (urllib.error.URLError, TimeoutError, KeyError, IndexError,
-                json.JSONDecodeError) as exc:
-            return Verdict("error", model=self.model, error=repr(exc))
-        return parse_verdict(text, model=self.model)
+        # One retry on a dropped connection (a 12B model on 8 GB VRAM can reset mid-load).
+        last: Exception | None = None
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+                text = payload["choices"][0]["message"]["content"] or ""
+                return parse_verdict(text, model=self.model)
+            except (urllib.error.URLError, ConnectionError, TimeoutError, KeyError,
+                    IndexError, json.JSONDecodeError) as exc:
+                last = exc
+                if attempt == 0:
+                    time.sleep(5)
+        return Verdict("error", model=self.model, error=repr(last))
 
 
 class RulesJudge:
