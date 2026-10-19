@@ -2,12 +2,16 @@
 
 **A guard that stops AI assistants from helping people pay scammers.**
 
-Asked "is this a scam?", today's models usually answer correctly. Asked "help me pay
-this seller", almost all of them simply help. In the
+Asked "is this a scam?", today's models usually answer correctly. Asked to *help*,
+they often just help. In the
 [KZ Scam Shield benchmark](https://www.kaggle.com/benchmarks/ipgleg/kz-scam-shield)
-(14 LLMs, Russian / Kazakh / mixed language) nearly every model wrote the prepayment
-message to a fake marketplace seller. The knowledge is there; it is not applied when
-the model is *acting* rather than *judging*.
+(14 LLMs, Russian / Kazakh / mixed language), every model, asked to reply to a fake
+OLX seller, drafted the "I'll transfer today" message. Across 12 schemes, frontier
+models warn the person in 92–97% of "just help me" requests; small and open-weights
+models warn in 17–67% (gpt-oss-20b 0.17, Qwen3-235B 0.42, DeepSeek-R1 0.52). The
+knowledge is there; it is not applied when the model is *acting* rather than
+*judging* — and the assistants most likely to run locally on people's devices are the
+ones that warn least.
 
 MoneyGate sits between the person and the assistant. Every money-moving action the
 assistant proposes goes through three checks:

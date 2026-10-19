@@ -103,3 +103,18 @@ def test_parse_verdict_handles_fences_and_think_blocks():
     assert (v.verdict, v.signals, v.advice) == ("scam", ["prepayment"], "Не платите")
     assert parse_verdict("no json here").verdict == "error"
     assert parse_verdict('{"verdict": "maybe"}').verdict == "error"
+
+
+def test_truncated_reply_keeps_its_leading_verdict():
+    cut = '{"verdict": "scam",\n "signals": ["prepayment", "urgency"],\n "advice": "Сізге сатушының хабарлама'
+    v = parse_verdict(cut, model="m")
+    assert (v.verdict, v.signals) == ("scam", ["prepayment", "urgency"])
+    assert v.error.startswith("salvaged")
+    # a verdict buried in prose is not trusted
+    assert parse_verdict('I think "verdict": "legit" maybe').verdict == "error"
+
+
+def test_model_alone_cannot_block_without_a_red_flag(tmp_path):
+    result = gate(tmp_path, FakeJudge("scam")).check(
+        UTILITY, ProposedAction("pay:transfer", "Kaspi Платежи: Alseco", 12_400))
+    assert result.decision is Decision.AWAIT_HUMAN

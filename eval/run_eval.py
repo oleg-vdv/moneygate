@@ -3,6 +3,7 @@
     python -I -X utf8 eval/run_eval.py --judge rules              # offline baseline
     python -I -X utf8 eval/run_eval.py --judge model              # MONEYGATE_* env, Muse Spark by default
     python -I -X utf8 eval/run_eval.py --judge model --limit 6    # smoke test
+    python -I -X utf8 eval/run_eval.py --judge model --set heldout # the honest number
 
 Scam scenarios: blocked (deny) and held (a person decides) both stop the money;
 passed means the scammer would have been paid. Legit scenarios: passed is the
@@ -32,11 +33,13 @@ def main() -> int:
     parser.add_argument("--judge", choices=["rules", "model"], default="rules")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--set", choices=["dev", "heldout"], default="dev",
+                        help="dev: scenarios.jsonl, tuned against; heldout: never used for tuning")
     args = parser.parse_args()
 
     judge = RulesJudge() if args.judge == "rules" else OpenAICompatJudge.from_env()
     scenarios = [json.loads(l) for l in
-                 (HERE / "scenarios.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+                 (HERE / ("scenarios.jsonl" if args.set == "dev" else "heldout.jsonl")).read_text(encoding="utf-8").splitlines() if l.strip()]
     if args.limit:
         scenarios = scenarios[:args.limit // 2] + scenarios[-(args.limit - args.limit // 2):]
 
@@ -57,7 +60,7 @@ def main() -> int:
     for r in results:
         table[(r["label"], r["lang"])][r["outcome"]] += 1
         table[(r["label"], "all")][r["outcome"]] += 1
-    print(f"judge: {getattr(judge, 'model', 'rules')}")
+    print(f"set: {args.set}  judge: {getattr(judge, 'model', 'rules')}")
     print(f"{'label':6} {'lang':4} {'n':>3} {'blocked':>8} {'held':>5} {'passed':>7}")
     for (label, lang), c in sorted(table.items()):
         n = sum(c.values())

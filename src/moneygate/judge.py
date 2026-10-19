@@ -22,7 +22,7 @@ from .actions import ProposedAction
 
 VERDICTS = ("scam", "suspicious", "legit")
 
-PROMPT_VERSION = "judge-v2"
+PROMPT_VERSION = "judge-v3"
 
 SYSTEM_PROMPT = """\
 You review actions an AI assistant is about to take for a person in Kazakhstan: pay, \
@@ -45,8 +45,8 @@ the sender is not evidence either way.
 Return a JSON object:
 {"verdict": "scam" | "suspicious" | "legit",
  "signals": ["short codes such as prepayment, new_number, secrecy, code_request, safe_account, authority, lookalike_link, off_platform, urgency"],
- "evidence": ["short exact quotes from the conversation"],
- "advice": "2-3 plain sentences to the person in the language they wrote in: what is wrong and a safe next step that does not use any contact from the message"}
+ "evidence": ["up to 3 exact quotes from the conversation, at most 10 words each"],
+ "advice": "at most 2 short sentences to the person in the language they wrote in: what is wrong and a safe next step that does not use any contact from the message"}
 
 Use "scam" only when you can quote at least one concrete mark. Use "suspicious" when \
 something is off but not clear. Otherwise "legit" with empty signals and evidence."""
@@ -79,6 +79,22 @@ def render_request(conversation: str, action: ProposedAction) -> str:
 
 
 _JSON_OBJECT = re.compile(r"\{.*\}", re.DOTALL)
+_LEADING_VERDICT = re.compile(r'^\s*\{\s*"verdict"\s*:\s*"(scam|suspicious|legit)"', re.IGNORECASE)
+_SIGNALS = re.compile(r'"signals"\s*:\s*\[([^\]]*)\]')
+
+
+def _salvage(text: str, model: str | None, why: str) -> Verdict:
+    """A reply cut off by the length cap still carries its verdict: it is the first field.
+
+    Kazakh costs a model 2-3x more tokens than Russian, so long advice gets truncated
+    while the verdict itself is complete. Only a verdict at the very start counts.
+    """
+    head = _LEADING_VERDICT.match(text)
+    if not head:
+        return Verdict("error", model=model, error=why)
+    found = _SIGNALS.search(text)
+    signals = re.findall(r'"([^"]+)"', found.group(1)) if found else []
+    return Verdict(head.group(1).lower(), signals, model=model, error=f"salvaged: {why}")
 
 
 def parse_verdict(text: str, model: str | None = None) -> Verdict:
@@ -86,11 +102,11 @@ def parse_verdict(text: str, model: str | None = None) -> Verdict:
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     match = _JSON_OBJECT.search(text)
     if not match:
-        return Verdict("error", model=model, error="no JSON object in reply")
+        return _salvage(text, model, "no JSON object in reply")
     try:
         data = json.loads(match.group(0))
     except json.JSONDecodeError as exc:
-        return Verdict("error", model=model, error=f"bad JSON: {exc}")
+        return _salvage(text, model, f"bad JSON: {exc}")
     verdict = str(data.get("verdict", "")).strip().lower()
     if verdict not in VERDICTS:
         return Verdict("error", model=model, error=f"unknown verdict {verdict!r}")
@@ -130,7 +146,7 @@ class OpenAICompatJudge:
             "model": self.model,
             "temperature": self.temperature,
             # A verdict fits in ~300 tokens; the cap stops JSON-mode whitespace loops.
-            "max_tokens": 600,
+            "max_tokens": 1000,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": render_request(conversation, action)},
