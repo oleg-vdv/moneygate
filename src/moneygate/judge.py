@@ -22,28 +22,34 @@ from .actions import ProposedAction
 
 VERDICTS = ("scam", "suspicious", "legit")
 
-PROMPT_VERSION = "judge-v1"
+PROMPT_VERSION = "judge-v2"
 
 SYSTEM_PROMPT = """\
-You are a fraud reviewer sitting between a person and their AI assistant in Kazakhstan. \
-The assistant is about to take an action for the person: pay, share card or ID data, \
-send a message, or open a link. You see the conversation the person shared and the \
-proposed action. Decide whether carrying out the action would help a fraudster.
+You review actions an AI assistant is about to take for a person in Kazakhstan: pay, \
+share card or ID data, send a message, or open a link. You see the conversation the \
+person shared and the proposed action. Decide whether doing it would help a fraudster.
 
-Typical schemes: prepayment to an unknown marketplace seller (OLX, Kaspi, Krisha, \
-Instagram shops), a "relative" writing from a new number and asking for money, \
-"bank security" or "police" asking to move money to a "safe account", requests for an \
-SMS code, fake delivery or fine payments via a link, investment or job offers that \
-require a deposit. Fraudsters push urgency and secrecy and move the chat off-platform. \
-The person's own trust in the sender is NOT evidence: scammers impersonate relatives.
+Most requests are ordinary: paying a utility or telecom bill through Kaspi or an \
+official app, sending money to a contact the person already knows, replying to a \
+clinic, school or delivery notice, buying through a marketplace's own safe delivery. \
+These are "legit".
 
-Answer with one JSON object and nothing else:
+Fraud has concrete marks: prepayment to an unknown seller outside the marketplace's \
+safe deal; a "relative" writing from a new number and asking for money in secret; \
+"bank security", "police" or a "Kcell/operator employee" asking to call back, move money \
+to a "safe account" or dictate an SMS code; a fine, delivery, prize or account unlock \
+paid or "confirmed" through a link from an SMS on a look-alike domain; a job or \
+investment that needs a deposit or moves you to a "curator" chat. The person trusting \
+the sender is not evidence either way.
+
+Return a JSON object:
 {"verdict": "scam" | "suspicious" | "legit",
- "signals": ["short codes, e.g. prepayment, off_platform, urgency, secrecy, new_number, code_request, safe_account, authority"],
- "evidence": ["exact short quotes from the conversation that support the verdict"],
- "advice": "2-3 plain sentences to the person, in the language they wrote in: what is wrong and a safe next step that does NOT use any contact from the suspicious message"}
+ "signals": ["short codes such as prepayment, new_number, secrecy, code_request, safe_account, authority, lookalike_link, off_platform, urgency"],
+ "evidence": ["short exact quotes from the conversation"],
+ "advice": "2-3 plain sentences to the person in the language they wrote in: what is wrong and a safe next step that does not use any contact from the message"}
 
-"legit" only if nothing in the conversation points to fraud. If unsure, "suspicious"."""
+Use "scam" only when you can quote at least one concrete mark. Use "suspicious" when \
+something is off but not clear. Otherwise "legit" with empty signals and evidence."""
 
 
 @dataclass(frozen=True)
@@ -99,12 +105,15 @@ def parse_verdict(text: str, model: str | None = None) -> Verdict:
 
 class OpenAICompatJudge:
     def __init__(self, base_url: str, model: str, api_key: str | None = None,
-                 timeout: float = 60.0, temperature: float = 0.0) -> None:
+                 timeout: float = 120.0, temperature: float = 0.0,
+                 json_mode: bool = True) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.api_key = api_key or ""
         self.timeout = timeout
         self.temperature = temperature
+        # Constrained JSON output: small local models otherwise break quoting inside evidence.
+        self.json_mode = json_mode
 
     @classmethod
     def from_env(cls) -> "OpenAICompatJudge":
@@ -113,17 +122,22 @@ class OpenAICompatJudge:
             base_url=os.environ.get("MONEYGATE_BASE_URL", "https://api.meta.ai/v1"),
             model=os.environ.get("MONEYGATE_MODEL", "muse-spark-1.1"),
             api_key=os.environ.get("MONEYGATE_API_KEY") or os.environ.get("MODEL_API_KEY"),
+            json_mode=os.environ.get("MONEYGATE_JSON_MODE", "1") != "0",
         )
 
     def review(self, conversation: str, action: ProposedAction) -> Verdict:
         body = {
             "model": self.model,
             "temperature": self.temperature,
+            # A verdict fits in ~300 tokens; the cap stops JSON-mode whitespace loops.
+            "max_tokens": 600,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": render_request(conversation, action)},
             ],
         }
+        if self.json_mode:
+            body["response_format"] = {"type": "json_object"}
         request = urllib.request.Request(
             self.base_url + "/chat/completions",
             data=json.dumps(body).encode("utf-8"),
