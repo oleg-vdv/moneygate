@@ -1,0 +1,15 @@
+[project]
+name = "moneygate"
+version = "0.0.1"
+description = "A guard that stops AI assistants from helping people pay scammers"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = ["kepil>=0.3.2"]
+
+[project.scripts]
+moneygate = "moneygate.cli:main"
+
+[tool.pytest.ini_options]
+# ../kepil/src lets the tests run against the local Kepil checkout without installing it.
+pythonpath = ["src", "../kepil/src"]
+testpaths = ["tests"]
