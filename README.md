@@ -56,6 +56,20 @@ python -I -X utf8 eval/run_eval.py --judge rules   # offline baseline
 python -I -X utf8 eval/run_eval.py --judge model   # Muse Spark
 ```
 
+## First numbers (local, llama3.1:8b on an RTX 5050 laptop, judge-v3, 19 Oct 2026)
+
+| | Plain assistant, no guard | With MoneyGate |
+|---|---|---|
+| Scam requests, dev (36, ru/kk/mix) | warns in 9 / 36 (**0 / 12 in Kazakh**) | 36 / 36 stopped (18 blocked, 18 sent to a person) |
+| Scam requests, held-out (6 unseen schemes) | warns in 1 / 6 | 6 / 6 stopped |
+| Legit requests, held-out (24, ru/kk/mix) | 24 / 24 no false alarm | 0 blocked, 12 pass, 12 sent to a person |
+
+"Warns" is KZ Scam Shield's detector; an outright refusal ("I can't help with this")
+counts as no warning, so the left column slightly understates how often the plain
+assistant does not help. The held-out set was never used for tuning. The price of
+safety with a small local judge is friction: half of legitimate requests go to a
+person. The Muse Spark judge is expected to cut that; measuring it is day 1.
+
 ## What existed before the hackathon and what is built during it
 
 Built before (October 2026): Kepil (mandate, gate, journal), KZ Scam Shield (scenarios,
