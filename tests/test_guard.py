@@ -74,6 +74,24 @@ def test_journal_chain_verifies_and_holds_no_card_numbers(tmp_path):
     assert "776 000 30 18" not in raw
 
 
+BANK_SMS = ("Kaspi Bank: попытка входа в ваш аккаунт. Если это не вы, срочно позвоните "
+            "в службу безопасности: +7 700 000 18 55")
+TRAINER = "Оплата за ноябрь — 15 000 ₸, как обычно на Kaspi по номеру +7 705 321 77 00 (Асель Т.)"
+
+
+def test_calling_the_number_from_a_bank_sms_goes_to_a_person(tmp_path):
+    result = gate(tmp_path, FakeJudge("legit")).check(
+        BANK_SMS, ProposedAction("message:send", "+7 700 000 18 55"))
+    assert result.decision is Decision.AWAIT_HUMAN
+    assert "recipient_from_message" in result.signals
+
+
+def test_paying_a_number_from_a_calm_message_still_passes(tmp_path):
+    result = gate(tmp_path, FakeJudge("legit")).check(
+        TRAINER, ProposedAction("pay:transfer", "+7 705 321 77 00", 15_000))
+    assert result.decision is Decision.ALLOW
+
+
 def test_rules_judge_flags_relative_from_new_number():
     verdict = RulesJudge().review(SON_NEW_NUMBER, PAY)
     assert verdict.verdict == "scam"

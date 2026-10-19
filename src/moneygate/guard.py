@@ -13,7 +13,7 @@ from kepil.mandate import Mandate
 from .actions import ProposedAction
 from .judge import PROMPT_VERSION, Judge, Verdict
 from .policy import decide
-from .signals import find_signals
+from .signals import find_signals, recipient_from_message
 
 
 def family_mandate(daily_limit_kzt: float = 50_000, days: int = 365) -> Mandate:
@@ -71,6 +71,8 @@ class MoneyGate:
         mandate_decision, mandate_reason = self._gateway.check(self.mandate, request)
 
         signals = find_signals(conversation)
+        if recipient_from_message(action.recipient, conversation):
+            signals.append("recipient_from_message")
         verdict: Verdict | None = None
         if mandate_decision is not Decision.DENY:
             verdict = self.judge.review(conversation, action)

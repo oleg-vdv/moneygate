@@ -32,8 +32,11 @@ _PATTERNS: dict[str, re.Pattern[str]] = {
     "safe_account": re.compile(
         r"безопасн\w* сч[её]т|резервн\w* сч[её]т|защищ[её]нн\w* сч[её]т|қауіпсіз шот|safe account"),
     "authority": re.compile(
-        r"служб\w* безопасности банка|сотрудник\w* (?:полиции|кнб|нацбанка)|следовател|"
-        r"банктің қауіпсіздік қызметі|полиция қызметкері|bank security (?:team|department)"),
+        r"служб\w* безопасности|сотрудник\w* (?:полиции|кнб|нацбанка)|следовател|"
+        r"қауіпсіздік қызмет|полиция қызметкері|security (?:team|department|service)"),
+    "easy_money": re.compile(
+        r"подработк|доход\w* (?:от )?[\d\s]+.{0,20}(?:ежедневно|в день)|опыт не нужен|"
+        r"қосымша табыс|күніне [\d\s]+|тәжірибе қажет емес|easy money|no experience needed"),
     "new_number": re.compile(
         r"с номера (?:друга|подруги)|телефон (?:разбил|сломал|утопил)|это мой новый номер|"
         r"досымның нөмір|телефоным сынды|new number"),
@@ -52,5 +55,22 @@ def find_signals(text: str) -> list[str]:
     return found
 
 
+def recipient_from_message(recipient: str | None, text: str) -> bool:
+    """Is the action aimed at a card, phone, handle or site that the message itself supplied?
+
+    This is the core trick of most schemes: "verify" or "pay" through the
+    contact the fraudster gave. Paying a number the person already knows does
+    not trip it; paying the number from the forwarded text does.
+    """
+    if not recipient:
+        return False
+    wanted = extract_contacts(recipient)
+    return bool(wanted) and bool(wanted & extract_contacts(text))
+
+
 def has_hard_signal(codes: list[str]) -> bool:
-    return any(code in HARD for code in codes)
+    """A hard flag alone, or the message's own contact plus any other flag."""
+    if any(code in HARD for code in codes):
+        return True
+    soft = [c for c in codes if c != "recipient_from_message"]
+    return "recipient_from_message" in codes and bool(soft)
