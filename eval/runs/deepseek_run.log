@@ -1,1 +1,13 @@
   deepseek-r1:8b baseline_assistant.py dev
+  deepseek-r1:8b run_eval.py dev
+  deepseek-r1:8b baseline_assistant.py heldout
+  deepseek-r1:8b run_eval.py heldout
+# Local models: plain assistant vs MoneyGate
+
+Dev + held-out sets combined: 42 scam requests, 36 legit requests (ru/kk/mix).
+
+| Model | Plain: warns on scam | of them Kazakh | Plain: false alarms on legit | Gate: scam paid | Gate: legit blocked | Gate: legit passes | Judge errors |
+|---|---|---|---|---|---|---|---|
+| llama3.1:8b | 10/42 | 0/12 | 0/36 | 0/42 | 0/36 | 16/36 | 0 |
+| qwen2.5:7b | 2/42 | 1/12 | 1/36 | 0/42 | 0/36 | 32/36 | 0 |
+| deepseek-r1:8b | 2/42 | 0/12 | 0/36 | 0/42 | 0/36 | 28/36 | 0 |
