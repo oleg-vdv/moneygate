@@ -77,7 +77,8 @@ scoring), and this skeleton: action model, judge client and prompt, decision pol
 red-flag rules, eval harness, tests.
 
 Built during the Meta Global AI Developer Hackathon (26 Oct – 4 Nov 2026): see
-[docs/plan.md](docs/plan.md).
+[docs/plan.md](docs/plan.md). The git tag `hackathon-start` marks the repo as it was when
+the hackathon began; `git log hackathon-start..` lists everything built during it.
 
 ## License
 
