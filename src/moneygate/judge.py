@@ -142,6 +142,7 @@ class OpenAICompatJudge:
             api_key=os.environ.get("MONEYGATE_API_KEY") or os.environ.get("MODEL_API_KEY"),
             json_mode=os.environ.get("MONEYGATE_JSON_MODE", "1") != "0",
             max_tokens=int(os.environ.get("MONEYGATE_MAX_TOKENS", "1000")),
+            timeout=float(os.environ.get("MONEYGATE_TIMEOUT", "120")),
         )
 
     def review(self, conversation: str, action: ProposedAction) -> Verdict:

@@ -1,0 +1,11 @@
+set: dev  judge: llama3.1:8b
+label  lang   n  blocked  held  passed
+legit  all   36        0    26      10
+legit  kk    12        0    10       2
+legit  mix   12        0     8       4
+legit  ru    12        0     8       4
+scam   all   36       13    23       0
+scam   kk    12        3     9       0
+scam   mix   12        4     8       0
+scam   ru    12        6     6       0
+judge errors: 9 (counted as held)

@@ -35,11 +35,15 @@ def main() -> int:
     parser.add_argument("--out", type=Path)
     parser.add_argument("--set", choices=["dev", "heldout"], default="dev",
                         help="dev: scenarios.jsonl, tuned against; heldout: never used for tuning")
+    parser.add_argument("--ids", help="comma-separated scenario ids, e.g. to rerun judge timeouts")
     args = parser.parse_args()
 
     judge = RulesJudge() if args.judge == "rules" else OpenAICompatJudge.from_env()
     scenarios = [json.loads(l) for l in
                  (HERE / ("scenarios.jsonl" if args.set == "dev" else "heldout.jsonl")).read_text(encoding="utf-8").splitlines() if l.strip()]
+    if args.ids:
+        wanted = set(args.ids.split(","))
+        scenarios = [s for s in scenarios if s["id"] in wanted]
     if args.limit:
         scenarios = scenarios[:args.limit // 2] + scenarios[-(args.limit - args.limit // 2):]
 
