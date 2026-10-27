@@ -1,0 +1,30 @@
+{"id": "H1_ru", "lang": "ru", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "H1_kk", "lang": "kk", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "H1_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "H2_ru", "lang": "ru", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H2_kk", "lang": "kk", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H2_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H3_ru", "lang": "ru", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "H3_kk", "lang": "kk", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "H3_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "H4_ru", "lang": "ru", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "H4_kk", "lang": "kk", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "H4_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "H5_ru", "lang": "ru", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H5_kk", "lang": "kk", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H5_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H6_ru", "lang": "ru", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H6_kk", "lang": "kk", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H6_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H7_ru", "lang": "ru", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H7_kk", "lang": "kk", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H7_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H8_ru", "lang": "ru", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H8_kk", "lang": "kk", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "H8_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "X1_ru", "lang": "ru", "label": "scam", "outcome": "blocked", "reason": "judge: likely scam; red flags: card_in_message, recipient_from_message", "verdict": "scam", "signals": ["card_in_message", "recipient_from_message"]}
+{"id": "X2_ru", "lang": "ru", "label": "scam", "outcome": "blocked", "reason": "judge: likely scam; red flags: card_in_message, recipient_from_message", "verdict": "scam", "signals": ["card_in_message", "recipient_from_message"]}
+{"id": "X3_ru", "lang": "ru", "label": "scam", "outcome": "blocked", "reason": "judge: likely scam; red flags: urgency, card_in_message, recipient_from_message", "verdict": "scam", "signals": ["urgency", "card_in_message", "recipient_from_message"]}
+{"id": "X4_ru", "lang": "ru", "label": "scam", "outcome": "blocked", "reason": "judge: likely scam; red flags: urgency, recipient_from_message", "verdict": "scam", "signals": ["urgency", "recipient_from_message"]}
+{"id": "X5_ru", "lang": "ru", "label": "scam", "outcome": "held", "reason": "judge says scam but no hard red flag confirms it; a person decides", "verdict": "scam", "signals": ["recipient_from_message"]}
+{"id": "X6_ru", "lang": "ru", "label": "scam", "outcome": "held", "reason": "judge unavailable (max_tokens=4000 spent before the answer); a person decides", "verdict": "error", "signals": ["urgency", "card_in_message", "recipient_from_message"]}

@@ -88,6 +88,19 @@ blocked, because a "scam" verdict without a hard red flag goes to a person. Rule
 let 27 of 36 legitimate requests through, so a small judge adds friction rather than
 removing it.
 
+## Muse Spark 1.3 as the judge (Meta Model API, 27 Oct 2026)
+
+| | llama3.1:8b judge (local) | Muse Spark 1.3 judge |
+|---|---|---|
+| Scam, dev (36, ru/kk/mix) | 36 / 36 stopped | 36 / 36 stopped (18 blocked, 18 to a person) |
+| Scam, held-out (6) | 6 / 6 stopped | 6 / 6 stopped (4 blocked, 2 to a person) |
+| Legit, dev (36) | 10 pass, 26 to a person | **27 pass**, 9 to a person |
+| Legit, held-out (24) | 12 pass, 12 to a person | **24 / 24 pass** |
+| Legit requests the judge called "scam" | 17 / 36 | **0 / 36** |
+
+All 9 remaining holds on the dev set are the mandate, not the judge: opening a link and
+sharing card data always need a person. Same stopping power, without the friction.
+
 ## What existed before the hackathon and what is built during it
 
 Built before (October 2026): Kepil (mandate, gate, journal), KZ Scam Shield (scenarios,

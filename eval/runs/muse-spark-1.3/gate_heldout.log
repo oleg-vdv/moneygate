@@ -1,0 +1,9 @@
+set: heldout  judge: muse-spark-1.3
+label  lang   n  blocked  held  passed
+legit  all   24        0     0      24
+legit  kk     8        0     0       8
+legit  mix    8        0     0       8
+legit  ru     8        0     0       8
+scam   all    6        4     2       0
+scam   ru     6        4     2       0
+judge errors: 1 (counted as held)
