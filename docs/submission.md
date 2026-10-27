@@ -18,9 +18,9 @@
 | Feedback on partner technologies | если использовали Fireworks / Modal / Baseten |
 | Согласие на использование материалов | галочка, ставит Олег |
 
-## Project Description (черновик, дополнить цифрами Muse Spark)
+## Project Description (черновик)
 
-AI assistants know a scam when asked "is this a scam?", but when asked to help they often just help: draft the "I'll transfer today" reply, fill in the card number. MoneyGate sits between the person and the assistant. Every money-moving action goes through a mandate (what is allowed at all), an LLM judge (Muse Spark) and deterministic red flags, and every decision lands in a hash-chained journal anyone can verify. Built for Kazakhstan: Russian, Kazakh and the mixed language people actually write in.
+MoneyGate is a safety gate for AI agents that move money. Assistants are starting to pay bills and answer sellers for people, and models that recognise a scam when asked "is this a scam?" still help when asked to help. MoneyGate checks every money-moving action before it runs: a mandate (what the agent may do at all), a Muse Spark judge and deterministic red flags, with a hash-chained journal anyone can verify. Scams arrive as screenshots and voice notes, so MoneyGate reads those too (Muse Spark image understanding, Muse Voice Transcribe). Any agent can use it over MCP; the demo is a Telegram assistant. Measured in Russian, Kazakh and mixed language: Muse Spark stops 36/36 scams on the dev set and 6/6 unseen ones, and lets 24/24 unseen legitimate requests through, where a local 8B judge sent half of them to a person.
 
 ## Why Meta's models matter (черновик)
 

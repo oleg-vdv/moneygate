@@ -1,25 +1,49 @@
 # MoneyGate
 
-**A guard that stops AI assistants from helping people pay scammers.**
+**A safety gate for AI agents that move money.**
 
-Asked "is this a scam?", today's models usually answer correctly. Asked to *help*,
-they often just help. In the
+Assistants are starting to act for people: pay a bill, answer a seller, fill in a
+card number. Asked "is this a scam?", today's models usually answer correctly. Asked
+to *help*, they often just help. In the
 [KZ Scam Shield benchmark](https://www.kaggle.com/benchmarks/ipgleg/kz-scam-shield)
 (14 LLMs, Russian / Kazakh / mixed language), every model, asked to reply to a fake
-OLX seller, drafted the "I'll transfer today" message. Across 12 schemes, frontier
-models warn the person in 92–97% of "just help me" requests; small and open-weights
-models warn in 17–67% (gpt-oss-20b 0.17, Qwen3-235B 0.42, DeepSeek-R1 0.52). The
-knowledge is there; it is not applied when the model is *acting* rather than
-*judging* — and the assistants most likely to run locally on people's devices are the
-ones that warn least.
+marketplace seller, drafted the "I'll transfer today" message. Across 12 schemes,
+frontier models warn the person in 92–97% of "just help me" requests; small and
+open-weights models warn in 17–67% (gpt-oss-20b 0.17, Qwen3-235B 0.42, DeepSeek-R1
+0.52). The knowledge is there; it is not applied when the model is *acting* rather
+than *judging*, and the assistants most likely to run on people's own devices are
+the ones that warn least.
 
-MoneyGate sits between the person and the assistant. Every money-moving action the
-assistant proposes goes through three checks:
+Scams do not arrive as clean text either. They arrive as a WhatsApp screenshot from
+"a son with a new number", a marketplace chat, a voice note: "Mum, it's me, send
+money, don't tell Dad".
+
+MoneyGate sits between the agent and the money. Any agent (over MCP, or the Telegram
+assistant in this repo) proposes an action; MoneyGate reads the conversation it came
+from, including screenshots and voice notes, and decides: **allow**, **stop**, or
+**ask the person**. Built and measured in Kazakhstan, in Russian, Kazakh and the
+mixed language people actually write, where today's models warn least.
+
+```
+chat / screenshot / voice note
+   │  Muse Spark (image understanding), Muse Voice Transcribe
+   ▼
+transcript + person's request ──► agent's planner proposes ONE action (Muse Spark)
+                                        │
+                                        ▼
+            MoneyGate: mandate (Kepil) + judge (Muse Spark) + red flags
+                                        │
+                     allow / stop with advice / a person decides
+                                        │
+                     hash-chained journal (verifiable, cards masked)
+```
+
+Every money-moving action goes through three checks:
 
 1. **Mandate** ([Kepil](https://github.com/oleg-vdv/kepil)): is this kind of action
    allowed at all, within limits? Anything not explicitly allowed is refused. SMS codes
    are never given out.
-2. **Judge**: an LLM (Muse Spark via the Meta Model API, or Meta open-weights models
+2. **Judge**: an LLM (Muse Spark 1.3 via the Meta Model API, or Llama open weights
    locally) reads the conversation and the proposed action and returns a verdict with
    evidence and advice in the person's language.
 3. **Red flags**: deterministic signals (new number, secrecy, "safe account", SMS code
@@ -35,6 +59,28 @@ Every decision lands in a hash-chained journal verifiable by an independent tool
 | legit | hard flag | **a person decides** |
 | legit | none | mandate decides (small payments pass) |
 | error / timeout | any | **a person decides**, never allowed |
+
+## Interfaces
+
+- **MCP server** (`python -m moneygate.mcp_server`): one tool, `check_action`, for any agent.
+- **Telegram assistant** (`python -m moneygate.telegram_bot`): forward a chat, a screenshot or
+  a voice note, ask "help me pay", watch the planner propose and MoneyGate decide.
+  "A person decides" comes with confirm / cancel buttons. Nothing is ever really paid.
+- **CLI and eval harness** (below).
+
+## Meta models used
+
+| Where | Model |
+|---|---|
+| Judge: scam / suspicious / legit, evidence, advice in the person's language | Muse Spark 1.3 |
+| Agent's planner: request + conversation -> one concrete action | Muse Spark 1.3 |
+| Screenshot -> transcript (chats, SMS lists, bank apps) | Muse Spark 1.3, image understanding |
+| Voice note -> transcript (Telegram OGG/Opus via ffmpeg) | Muse Voice Transcribe 1.0 |
+| Judge on the device, no cloud | Llama 3.1 8B (Ollama), numbers below |
+
+Muse Voice Transcribe lists 25 evaluated languages without Russian or Kazakh; it still
+transcribed our Russian voice notes word for word (card digits included). Kazakh voice
+is not measured yet.
 
 ## Run
 
