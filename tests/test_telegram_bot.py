@@ -122,3 +122,24 @@ def test_voice_without_card_still_goes_to_the_gate(tmp_path):
     b.on_update(msg(voice={"file_id": "v"}))
     b.on_update(msg(text="жібер"))
     assert "ОСТАНОВЛЕНО" in tg.sent[-1][1]
+
+
+def test_english_speaker_gets_english(tmp_path):
+    b, tg = bot(tmp_path, "scam")
+    b.on_update({"update_id": 1, "message": {"chat": {"id": 7}, "from": {"language_code": "en"},
+                                             "photo": [{"file_id": "x"}]}})
+    assert tg.sent[-1][1].startswith("Added to the conversation")
+    b.on_update(msg(text="Please send him the money"))
+    out = tg.sent[-1][1]
+    assert "STOPPED" in out and "Red flags" in out and "pressure to hurry" in out
+
+
+def test_language_follows_own_words_and_commands(tmp_path):
+    from moneygate.telegram_bot import guess_lang
+    assert guess_lang("send it to him", "ru") == "en"
+    assert guess_lang("жібер ақшаны", "en") == "ru"
+    assert guess_lang("ok", "ru") == "ru"
+    b, tg = bot(tmp_path, "legit")
+    b.on_update(msg(text="/en"))
+    b.on_update(msg(text="/new"))
+    assert tg.sent[-1][1].startswith("Starting over")

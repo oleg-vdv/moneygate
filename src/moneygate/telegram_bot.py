@@ -1,8 +1,12 @@
 """Telegram demo: forward the conversation, ask the assistant to help, watch MoneyGate decide.
 
   1. Forward the messages, a screenshot or a voice note you received.
-  2. Write what you want: "помоги перевести", "ответь, что согласна".
+  2. Write what you want: "help me pay him", "помоги перевести", "ответь, что согласна".
   3. The assistant proposes an action; MoneyGate allows it, stops it, or asks you.
+
+The bot speaks English or Russian: it follows the language you write in (Latin text ->
+English), falls back to your Telegram language, and /en or /ru switch it by hand.
+Advice comes from the judge in the language of the conversation, Kazakh included.
 
   TELEGRAM_BOT_TOKEN=...            # from @BotFather, in ./.env
   TELEGRAM_ALLOWED_CHATS=123,456    # optional: who may use it (every message costs API calls)
@@ -33,34 +37,116 @@ from .guard import GuardResult, MoneyGate
 from .judge import OpenAICompatJudge, load_env_file
 from .media import MediaError, MetaMedia
 
-SIGNAL_RU = {
-    "prepayment": "предоплата незнакомцу",
-    "off_platform": "уводят из площадки в мессенджер или на внешнюю ссылку",
-    "urgency": "торопят",
-    "secrecy": "просят никому не говорить",
-    "code_request": "просят код из SMS",
-    "safe_account": "«безопасный счёт»",
-    "authority": "представляются банком, полицией или госорганом",
-    "easy_money": "лёгкий заработок",
-    "new_number": "«новый номер» знакомого человека",
-    "card_in_message": "номер карты прямо в сообщении",
-    "recipient_from_message": "получатель взят из присланного сообщения",
+SIGNALS = {
+    "ru": {
+        "prepayment": "предоплата незнакомцу",
+        "off_platform": "уводят из площадки в мессенджер или на внешнюю ссылку",
+        "urgency": "торопят",
+        "secrecy": "просят никому не говорить",
+        "code_request": "просят код из SMS",
+        "safe_account": "«безопасный счёт»",
+        "authority": "представляются банком, полицией или госорганом",
+        "easy_money": "лёгкий заработок",
+        "new_number": "«новый номер» знакомого человека",
+        "card_in_message": "номер карты прямо в сообщении",
+        "recipient_from_message": "получатель взят из присланного сообщения",
+    },
+    "en": {
+        "prepayment": "prepayment to a stranger",
+        "off_platform": "moved off the marketplace to a messenger or an outside link",
+        "urgency": "pressure to hurry",
+        "secrecy": "asked to tell no one",
+        "code_request": "asks for the SMS code",
+        "safe_account": "a \"safe account\"",
+        "authority": "poses as a bank, police or government",
+        "easy_money": "easy money",
+        "new_number": "someone you know on a \"new number\"",
+        "card_in_message": "card number right in the message",
+        "recipient_from_message": "recipient taken from the forwarded message",
+    },
 }
 
-ACTION_RU = {
-    "pay:transfer": "перевод", "share:card": "передача данных карты", "share:id": "передача ИИН или документа",
-    "share:code": "передача кода из SMS", "message:send": "ответ от вашего имени", "link:open": "открыть ссылку",
+ACTIONS = {
+    "ru": {"pay:transfer": "перевод", "share:card": "передача данных карты",
+           "share:id": "передача ИИН или документа", "share:code": "передача кода из SMS",
+           "message:send": "ответ от вашего имени", "link:open": "открыть ссылку"},
+    "en": {"pay:transfer": "transfer", "share:card": "share card details", "share:id": "share an ID number",
+           "share:code": "share the SMS code", "message:send": "reply on your behalf", "link:open": "open a link"},
 }
 
-HELP = (
-    "Я ассистент с предохранителем MoneyGate.\n\n"
-    "1. Перешлите мне переписку: сообщения, скриншот или голосовое.\n"
-    "2. Напишите, что сделать: «помоги перевести», «ответь, что согласна».\n"
-    "3. Я предложу действие, а MoneyGate решит: можно, нельзя или решаете вы.\n\n"
-    "Деньги и сообщения на самом деле не отправляются: это демо.\n"
-    "/new — начать новую переписку.\n\n"
-    "Хабарламаны, скриншотты немесе дауыстық хабарды жіберіңіз, сосын не істеу керегін жазыңыз."
-)
+TEXT = {
+    "ru": {
+        "help": (
+            "Я ассистент с предохранителем MoneyGate.\n\n"
+            "1. Перешлите мне переписку: сообщения, скриншот или голосовое.\n"
+            "2. Напишите, что сделать: «помоги перевести», «ответь, что согласна».\n"
+            "3. Я предложу действие, а MoneyGate решит: можно, нельзя или решаете вы.\n\n"
+            "Деньги и сообщения на самом деле не отправляются: это демо.\n"
+            "/new – начать новую переписку, /en – English.\n\n"
+            "Хабарламаны, скриншотты немесе дауыстық хабарды жіберіңіз, сосын не істеу керегін жазыңыз."),
+        "closed": "Этот бот закрыт для демо. Ваш chat id: {id}",
+        "new": "Начинаем заново. Перешлите переписку.",
+        "unreadable": "Не смог прочитать вложение: {err}",
+        "not_heard": "не расслышал голосовое, запишите ещё раз или перешлите текстом",
+        "added": "Добавил в переписку",
+        "now_ask": "Теперь напишите, что сделать.",
+        "no_answer": "Ассистент не ответил: {err}",
+        "whom": "Кому и сколько? Перешлите переписку, скриншот или голосовое, где это сказано, "
+                "или напишите получателя и сумму.",
+        "which_chat": "О какой переписке речь? Перешлите сообщения, скриншот или голосовое.",
+        "confirm": "Я проверил(а), выполнить", "cancel": "Отменить",
+        "decided": "Это решение уже принято.",
+        "done": "Хорошо, решение ваше: {what} (демо, ничего не отправлено).",
+        "cancelled": "Отменено. Ничего не отправлено.",
+        "wanted": "Ассистент хотел", "flags": "Признаки", "journal": "Запись в журнале",
+        "allow": "MoneyGate: можно. Похоже на обычную просьбу, в пределах лимита (демо: ничего не отправлено).",
+        "deny": "MoneyGate: ОСТАНОВЛЕНО. Ассистент не будет этого делать.",
+        "human": "MoneyGate: решаете вы. Ассистент сам это делать не будет.",
+        "screenshot": "скриншот", "voice": "голосовое сообщение", "request": "Просьба человека",
+        "someone": "собеседник", "lang_set": "Язык: русский.",
+    },
+    "en": {
+        "help": (
+            "I'm an assistant with a MoneyGate safety gate.\n\n"
+            "1. Forward me a conversation: messages, a screenshot or a voice note.\n"
+            "2. Tell me what to do: \"help me pay him\", \"reply that I agree\".\n"
+            "3. I propose an action, and MoneyGate decides: allowed, stopped, or your call.\n\n"
+            "Nothing is really paid or sent: this is a demo.\n"
+            "/new – start a new conversation, /ru – по-русски.\n\n"
+            "Try it: forward a screenshot of a chat where someone asks for money, then write \"send it\"."),
+        "closed": "This bot is closed for the demo. Your chat id: {id}",
+        "new": "Starting over. Forward the conversation.",
+        "unreadable": "Couldn't read the attachment: {err}",
+        "not_heard": "couldn't make out the voice note, record it again or forward it as text",
+        "added": "Added to the conversation",
+        "now_ask": "Now tell me what to do.",
+        "no_answer": "The assistant didn't answer: {err}",
+        "whom": "To whom, and how much? Forward the chat, screenshot or voice note that says it, "
+                "or write the recipient and the amount.",
+        "which_chat": "Which conversation? Forward the messages, a screenshot or a voice note.",
+        "confirm": "I've checked, go ahead", "cancel": "Cancel",
+        "decided": "That's already been decided.",
+        "done": "OK, your call: {what} (demo, nothing sent).",
+        "cancelled": "Cancelled. Nothing was sent.",
+        "wanted": "The assistant wanted to", "flags": "Red flags", "journal": "Journal record",
+        "allow": "MoneyGate: allowed. Looks like an ordinary request, within the limit (demo: nothing sent).",
+        "deny": "MoneyGate: STOPPED. The assistant will not do this.",
+        "human": "MoneyGate: your call. The assistant won't do this on its own.",
+        "screenshot": "screenshot", "voice": "voice note", "request": "The person's request",
+        "someone": "the other person", "lang_set": "Language: English.",
+    },
+}
+
+_LATIN = re.compile(r"[a-z]", re.IGNORECASE)
+_CYRILLIC = re.compile(r"[а-яёәғқңөұүһі]", re.IGNORECASE)
+
+
+def guess_lang(text: str, fallback: str) -> str:
+    """Latin-script text -> English; Cyrillic (Russian, Kazakh) -> Russian interface."""
+    latin, cyrillic = len(_LATIN.findall(text)), len(_CYRILLIC.findall(text))
+    if latin + cyrillic < 3:
+        return fallback
+    return "en" if latin > cyrillic else "ru"
 
 
 class Telegram:
@@ -95,6 +181,8 @@ class Chat:
     lines: list[str] = field(default_factory=list)
     gate: MoneyGate | None = None
     pending: dict[str, ProposedAction] = field(default_factory=dict)
+    lang: str | None = None     # None: not decided yet
+    pinned: bool = False        # set by /en or /ru: stop guessing
 
 
 class Bot:
@@ -127,48 +215,58 @@ class Bot:
         chat_id = message["chat"]["id"]
         kind = next((k for k in ("photo", "voice", "audio", "document", "text") if k in message), "other")
         print(f"chat {chat_id}: {kind}", file=sys.stderr, flush=True)
+        code = str((message.get("from") or {}).get("language_code") or "ru")
+        tg_lang = "ru" if code.startswith(("ru", "kk", "uz", "ky", "be", "uk")) else "en"
         if self.allowed is not None and chat_id not in self.allowed:
-            self.tg.send(chat_id, f"Этот бот закрыт для демо. Ваш chat id: {chat_id}")
+            self.tg.send(chat_id, TEXT[tg_lang]["closed"].format(id=chat_id))
             return
         state = self.chat(chat_id)
         text = message.get("text") or message.get("caption") or ""
         forwarded = "forward_origin" in message or "forward_from" in message or "forward_sender_name" in message
 
+        if text.startswith(("/en", "/ru")):
+            state.lang, state.pinned = text[1:3], True
+            self.tg.send(chat_id, TEXT[state.lang]["lang_set"])
+            return
+        # The person's own words decide the interface; forwarded text is someone else's.
+        if not state.pinned and text and not forwarded and not text.startswith("/"):
+            state.lang = guess_lang(text, state.lang or tg_lang)
+        t = TEXT[state.lang or tg_lang]
+
         if text.startswith("/start") or text.startswith("/help"):
-            self.tg.send(chat_id, HELP)
+            self.tg.send(chat_id, t["help"])
             return
         if text.startswith("/new"):
             state.lines.clear()
             state.pending.clear()
-            self.tg.send(chat_id, "Начинаем заново. Перешлите переписку.")
+            self.tg.send(chat_id, t["new"])
             return
 
         self.tg.call("sendChatAction", chat_id=chat_id, action="typing")
         try:
-            got = self.read_media(message)
+            got = self.read_media(message, t)
         except MediaError as exc:
-            self.tg.send(chat_id, f"Не смог прочитать вложение: {exc}")
+            self.tg.send(chat_id, t["unreadable"].format(err=exc))
             return
         if got:
             state.lines.append(got)
         if forwarded and message.get("text"):
-            state.lines.append(f"{_sender(message)}: {message['text']}")
+            state.lines.append(f"{_sender(message, t['someone'])}: {message['text']}")
             text = ""
         if forwarded or (got and not text):
-            self.tg.send(chat_id, "Добавил в переписку" + (":\n\n" + got[:700] if got else ".")
-                         + "\n\nТеперь напишите, что сделать.")
+            self.tg.send(chat_id, t["added"] + (":\n\n" + got[:700] if got else ".") + "\n\n" + t["now_ask"])
             return
         if text:
             self.handle_request(chat_id, state, text)
 
-    def read_media(self, message: dict) -> str:
+    def read_media(self, message: dict, t: dict) -> str:
         if "photo" in message:
             image = self.tg.download(message["photo"][-1]["file_id"])
-            return "[скриншот]\n" + self.media.read_screenshot(image, "image/jpeg")
+            return f"[{t['screenshot']}]\n" + self.media.read_screenshot(image, "image/jpeg")
         document = message.get("document") or {}
         if str(document.get("mime_type", "")).startswith("image/"):
             image = self.tg.download(document["file_id"])
-            return "[скриншот]\n" + self.media.read_screenshot(image, document["mime_type"])
+            return f"[{t['screenshot']}]\n" + self.media.read_screenshot(image, document["mime_type"])
         voice = message.get("voice") or message.get("audio")
         if voice:
             audio = self.tg.download(voice["file_id"])
@@ -177,60 +275,64 @@ class Bot:
                 (self.voice_dir / f"{int(time.time())}.ogg").write_bytes(audio)
             heard = self.media.transcribe(audio)
             if not heard:
-                raise MediaError("не расслышал голосовое, запишите ещё раз или перешлите текстом")
-            return "[голосовое сообщение]\n" + heard
+                raise MediaError(t["not_heard"])
+            return f"[{t['voice']}]\n" + heard
         return ""
 
     def handle_request(self, chat_id: int, state: Chat, request: str) -> None:
+        lang = state.lang or "ru"
+        t = TEXT[lang]
         # No shared conversation: the request itself is the conversation (pasted text).
         conversation = "\n\n".join(state.lines) or request
-        conversation = f"Просьба человека: {request}\n\n{conversation}"
+        conversation = f"{t['request']}: {request}\n\n{conversation}"
         try:
             proposal = self.propose(self.judge, request, conversation)
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError, ValueError) as exc:
-            self.tg.send(chat_id, f"Ассистент не ответил: {exc}")
+            self.tg.send(chat_id, t["no_answer"].format(err=exc))
             return
         action = proposal.action
         # Nothing forwarded and nothing concrete asked: there is nothing to check yet.
         # With a conversation, the gate decides even if the recipient is missing: a voice
         # note "send 50 000, tell no one" has no card number and is still a scam to stop.
         if not state.lines and action.type == "pay:transfer" and not (action.recipient and action.amount_kzt):
-            self.tg.send(chat_id, "Кому и сколько? Перешлите переписку, скриншот или голосовое, "
-                                  "где это сказано, или напишите получателя и сумму.")
+            self.tg.send(chat_id, t["whom"])
             return
         if not state.lines and not action.recipient:
-            self.tg.send(chat_id, "О какой переписке речь? Перешлите сообщения, скриншот или голосовое.")
+            self.tg.send(chat_id, t["which_chat"])
             return
         result = state.gate.check(conversation, action)
-        text, buttons = render(proposal.reply, proposal.action, result)
+        text, buttons = render(proposal.reply, proposal.action, result, lang)
         if result.decision is Decision.AWAIT_HUMAN:
             key = result.record_hash[-12:] if result.record_hash else str(int(time.time()))
             state.pending[key] = proposal.action
-            buttons = [[{"text": "Я проверил(а), выполнить", "callback_data": f"ok:{key}"},
-                        {"text": "Отменить", "callback_data": f"no:{key}"}]]
+            buttons = [[{"text": t["confirm"], "callback_data": f"ok:{key}"},
+                        {"text": t["cancel"], "callback_data": f"no:{key}"}]]
         self.tg.send(chat_id, text, buttons)
         state.lines.clear()
 
     def on_button(self, query: dict) -> None:
         chat_id = query["message"]["chat"]["id"]
+        state = self.chat(chat_id)
+        lang = state.lang or "ru"
+        t = TEXT[lang]
         verb, _, key = str(query.get("data", "")).partition(":")
-        action = self.chat(chat_id).pending.pop(key, None)
+        action = state.pending.pop(key, None)
         self.tg.call("answerCallbackQuery", callback_query_id=query["id"])
         self.tg.call("editMessageReplyMarkup", chat_id=chat_id, message_id=query["message"]["message_id"],
                      reply_markup={"inline_keyboard": []})
         if action is None:
-            self.tg.send(chat_id, "Это решение уже принято.")
+            self.tg.send(chat_id, t["decided"])
         elif verb == "ok":
-            self.tg.send(chat_id, f"Хорошо, решение ваше: {ACTION_RU[action.type]} выполнен(а) (демо).")
+            self.tg.send(chat_id, t["done"].format(what=describe(action, lang)))
         else:
-            self.tg.send(chat_id, "Отменено. Ничего не отправлено.")
+            self.tg.send(chat_id, t["cancelled"])
 
 
-def _sender(message: dict) -> str:
+def _sender(message: dict, someone: str) -> str:
     origin = message.get("forward_origin") or {}
     user = origin.get("sender_user") or message.get("forward_from") or {}
     name = " ".join(x for x in (user.get("first_name"), user.get("last_name")) if x)
-    return name or origin.get("sender_user_name") or message.get("forward_sender_name") or "собеседник"
+    return name or origin.get("sender_user_name") or message.get("forward_sender_name") or someone
 
 
 _CARD = re.compile(r"\b(?:\d[ -]?){12,18}(\d{4})\b")
@@ -241,8 +343,8 @@ def mask_cards(text: str) -> str:
     return _CARD.sub(lambda m: "*" + m.group(1), text)
 
 
-def describe(action: ProposedAction) -> str:
-    parts = [ACTION_RU.get(action.type, action.type)]
+def describe(action: ProposedAction, lang: str = "ru") -> str:
+    parts = [ACTIONS[lang].get(action.type, action.type)]
     if action.amount_kzt:
         parts.append(f"{action.amount_kzt:,.0f} ₸".replace(",", " "))
     if action.recipient:
@@ -250,20 +352,17 @@ def describe(action: ProposedAction) -> str:
     return " ".join(parts)
 
 
-def render(reply: str, action: ProposedAction, result: GuardResult) -> tuple[str, list | None]:
-    head = f"Ассистент хотел: {describe(action)}"
+def render(reply: str, action: ProposedAction, result: GuardResult,
+           lang: str = "ru") -> tuple[str, list | None]:
+    t = TEXT[lang]
+    head = f"{t['wanted']}: {describe(action, lang)}"
     if reply:
-        head += f"\n«{mask_cards(reply)}»"
-    flags = [SIGNAL_RU.get(s, s) for s in result.signals]
-    why = ("\nПризнаки: " + "; ".join(flags)) if flags else ""
+        head += f"\n«{mask_cards(reply)}»" if lang == "ru" else f"\n\"{mask_cards(reply)}\""
+    flags = [SIGNALS[lang].get(s, s) for s in result.signals]
+    why = (f"\n{t['flags']}: " + "; ".join(flags)) if flags else ""
     advice = f"\n\n{mask_cards(result.advice)}" if result.advice else ""
-    proof = f"\n\nЗапись в журнале: {result.record_hash[:23]}…" if result.record_hash else ""
-    if result.decision is Decision.ALLOW:
-        body = "MoneyGate: можно. Похоже на обычную просьбу, в пределах лимита (демо: ничего не отправлено)."
-    elif result.decision is Decision.DENY:
-        body = "MoneyGate: ОСТАНОВЛЕНО. Ассистент не будет этого делать."
-    else:
-        body = "MoneyGate: решаете вы. Ассистент сам это делать не будет."
+    proof = f"\n\n{t['journal']}: {result.record_hash[:23]}…" if result.record_hash else ""
+    body = {Decision.ALLOW: t["allow"], Decision.DENY: t["deny"]}.get(result.decision, t["human"])
     return f"{head}\n\n{body}{why}{advice}{proof}", None
 
 

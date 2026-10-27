@@ -66,6 +66,8 @@ Every decision lands in a hash-chained journal verifiable by an independent tool
 - **Telegram assistant** (`python -m moneygate.telegram_bot`): forward a chat, a screenshot or
   a voice note, ask "help me pay", watch the planner propose and MoneyGate decide.
   "A person decides" comes with confirm / cancel buttons. Nothing is ever really paid.
+  It answers in English or Russian (follows your language; /en, /ru); the judge's advice
+  comes in the language of the conversation, Kazakh included.
 - **CLI and eval harness** (below).
 
 ## Meta models used
@@ -112,6 +114,7 @@ Evaluation:
 python -I -X utf8 eval/build_scenarios.py          # 36 scam + 36 legit help requests
 python -I -X utf8 eval/run_eval.py --judge rules   # offline baseline
 python -I -X utf8 eval/run_eval.py --judge model   # Muse Spark
+python -I -X utf8 eval/run_eval.py --judge model --set en   # English
 ```
 
 ## First numbers (local, llama3.1:8b on an RTX 5050 laptop, judge-v3, 19 Oct 2026)
@@ -143,8 +146,12 @@ removing it.
 | Legit, dev (36) | 10 pass, 26 to a person | **27 pass**, 9 to a person |
 | Legit, held-out (24) | 12 pass, 12 to a person | **24 / 24 pass** |
 | Legit requests the judge called "scam" | 17 / 36 | **0 / 36** |
+| Scam, English (12) | not run | 12 / 12 stopped (10 blocked, 2 to a person) |
+| Legit, English (12) | not run | 9 pass, 3 to a person (the mandate) |
 
-All 9 remaining holds on the dev set are the mandate, not the judge: opening a link and
+The English set (`eval/english.jsonl`) is the Russian dev items translated by Muse Spark
+and checked by hand, so English-reading judges can read every scenario; actions are
+unchanged, so the numbers compare one to one. All 9 remaining holds on the dev set are the mandate, not the judge: opening a link and
 sharing card data always need a person. Same stopping power, without the friction.
 
 ## What existed before the hackathon and what is built during it

@@ -33,14 +33,16 @@ def main() -> int:
     parser.add_argument("--judge", choices=["rules", "model"], default="rules")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--out", type=Path)
-    parser.add_argument("--set", choices=["dev", "heldout"], default="dev",
-                        help="dev: scenarios.jsonl, tuned against; heldout: never used for tuning")
+    parser.add_argument("--set", choices=["dev", "heldout", "en"], default="dev",
+                        help="dev: scenarios.jsonl, tuned against; heldout: never used for tuning; "
+                             "en: the Russian dev items in English (english.jsonl)")
     parser.add_argument("--ids", help="comma-separated scenario ids, e.g. to rerun judge timeouts")
     args = parser.parse_args()
 
     judge = RulesJudge() if args.judge == "rules" else OpenAICompatJudge.from_env()
     scenarios = [json.loads(l) for l in
-                 (HERE / ("scenarios.jsonl" if args.set == "dev" else "heldout.jsonl")).read_text(encoding="utf-8").splitlines() if l.strip()]
+                 (HERE / {"dev": "scenarios.jsonl", "heldout": "heldout.jsonl", "en": "english.jsonl"}[args.set])
+                 .read_text(encoding="utf-8").splitlines() if l.strip()]
     if args.ids:
         wanted = set(args.ids.split(","))
         scenarios = [s for s in scenarios if s["id"] in wanted]

@@ -10,6 +10,7 @@ planner it proposes the payment, and the gate has to catch it.
 from __future__ import annotations
 
 import json
+import re
 import urllib.error
 import urllib.request
 
@@ -54,15 +55,25 @@ def propose(client: OpenAICompatJudge, request: str, conversation: str) -> Propo
             {"role": "user", "content": f"Conversation:\n<<<\n{conversation.strip()}\n>>>\n\nRequest: {request}"},
         ],
     }
-    http = urllib.request.Request(
-        client.base_url + "/chat/completions", data=json.dumps(body).encode("utf-8"), method="POST",
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {client.api_key}"})
-    with urllib.request.urlopen(http, timeout=client.timeout) as response:
-        payload = json.loads(response.read().decode("utf-8"))
-    data = json.loads(payload["choices"][0]["message"]["content"] or "{}")
-    kind = data.get("type") if data.get("type") in ACTION_TYPES else "pay:transfer"
+    data: dict = {}
+    # An empty reply happens now and then; read as {}, it used to become "transfer nothing
+    # to nobody". One retry, then a visible failure instead of a made-up action.
+    for _ in range(2):
+        http = urllib.request.Request(
+            client.base_url + "/chat/completions", data=json.dumps(body).encode("utf-8"), method="POST",
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {client.api_key}"})
+        with urllib.request.urlopen(http, timeout=client.timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        content = (payload["choices"][0]["message"].get("content") or "").strip()
+        data = json.loads(content) if content else {}
+        if data.get("type") in ACTION_TYPES:
+            break
+    else:
+        raise ValueError("the planner returned no action")
+    kind = data["type"]
     try:
-        amount = max(0.0, float(data.get("amount_kzt") or 0))
+        # "85 000" or "85,000" as a string still means 85000.
+        amount = max(0.0, float(re.sub(r"[\s,]", "", str(data.get("amount_kzt") or 0))))
     except (TypeError, ValueError):
         amount = 0.0
     action = ProposedAction(kind, data.get("recipient") or None, amount, data.get("text") or None)

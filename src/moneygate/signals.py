@@ -22,16 +22,20 @@ _PATTERNS: dict[str, re.Pattern[str]] = {
         r"(?:message|text) me on (?:whatsapp|telegram)"),
     "urgency": re.compile(
         r"срочно|немедленно|в течение (?:часа|\d+ минут)|сегодня до|иначе (?:заблок|спиш|аннулир)|"
-        r"шұғыл|тез арада|дереу|urgent|immediately|within (?:an hour|\d+ minutes)|"
+        r"шұғыл|тез арада|дереу|urgent|immediately|within (?:an hour|\d+ minutes|\d+ hours)|"
+        r"before (?:23:59|the end of the day)|decide quickly|otherwise (?:\w+ ){0,3}(?:blocked|confiscated|returned)|"
         r"\bтез [\d\s]+ ?мын|\bшугыл"),
     "secrecy": re.compile(
         r"никому не (?:говори|сообща)|(?:папе|маме|родным) (?:пока )?не говори|не звони на (?:старый|мой)|"
         r"ешкімге айтпа|әкеңе айтпа|don'?t tell anyone|"
         # Plain-letter forms: speech recognisers often drop Kazakh letters ("екиме айтпа").
-        r"\bеш\w* айтпа|\bеки?ме айтпа|\bаке\w* айтпа|\bпапа\w* айтпа"),
+        r"\bеш\w* айтпа|\bеки?ме айтпа|\bаке\w* айтпа|\bпапа\w* айтпа|"
+        r"(?:don'?t|do not) tell (?:anyone|dad|mom|mum|your (?:dad|mom|mum|husband|wife|family))|"
+        r"keep (?:it|this) (?:a )?secret|don'?t call (?:the|my) old number"),
     "code_request": re.compile(
         r"код из смс|(?:назови|продиктуй|сообщи|скажи)\w* (?:мне )?код|кодты (?:айт|жібер)|"
-        r"смс-код|(?:tell|send) me the code|one-time code|otp"),
+        r"смс-код|(?:tell|send) me the code|one-time code|otp|"
+        r"(?:dictate|read out|tell|give) (?:\w+ ){0,3}(?:the )?code|code from the sms"),
     "safe_account": re.compile(
         r"безопасн\w* сч[её]т|резервн\w* сч[её]т|защищ[её]нн\w* сч[её]т|қауіпсіз шот|safe account"),
     "authority": re.compile(
@@ -39,11 +43,14 @@ _PATTERNS: dict[str, re.Pattern[str]] = {
         r"қауіпсіздік қызмет|полиция қызметкері|security (?:team|department|service)"),
     "easy_money": re.compile(
         r"подработк|доход\w* (?:от )?[\d\s]+.{0,20}(?:ежедневно|в день)|опыт не нужен|"
-        r"қосымша табыс|күніне [\d\s]+|тәжірибе қажет емес|easy money|no experience needed"),
+        r"қосымша табыс|күніне [\d\s]+|тәжірибе қажет емес|easy money|no experience needed|"
+        r"part-time job|income [\d\s–-]+ ?₸ (?:daily|a day|per day)"),
     "new_number": re.compile(
         r"с номера (?:друга|подруги)|телефон (?:разбил|сломал|утопил)|это мой новый номер|"
         r"досымның нөмір|телефоным сынды|new number|"
-        r"\bдос\w* ном\w*|жана ном\w*|телефон\w* сын"),
+        r"\bдос\w* ном\w*|жана ном\w*|телефон\w* сын|"
+        r"(?:from|on) (?:a|my) friend'?s (?:number|phone)|(?:broke|lost|dropped) my phone|"
+        r"this is my new number"),
 }
 
 # Kazakh letters -> the Russian ones a recogniser or a hurried typist writes instead.

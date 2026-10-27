@@ -132,3 +132,9 @@ def test_kazakh_flags_survive_plain_letter_transcripts():
                   "Апа боумен досымнын номернен жазап турмын тез 50 мын жебирше екиме айтпа"):
         assert {"urgency", "secrecy", "new_number"} <= set(find_signals(heard))
     assert find_signals("Алло, тез келші, тамақ дайын") == []
+
+
+def test_english_secrecy_and_new_number():
+    from moneygate.signals import find_signals
+    heard = "Mom, it is me. I broke my phone, texting from a friend's number. And do not tell Dad, okay?"
+    assert {"secrecy", "new_number"} <= set(find_signals(heard))
