@@ -101,3 +101,17 @@ def test_vague_request_asks_whom_and_how_much(tmp_path):
     b, tg = bot(tmp_path, "legit", ProposedAction("pay:transfer"))
     b.on_update(msg(text="помоги перевести ему деньги"))
     assert "Кому и сколько" in tg.sent[-1][1]
+
+
+def test_empty_voice_is_reported_not_added(tmp_path):
+    b, tg = bot(tmp_path, "legit")
+    b.media.transcribe = lambda audio: ""
+    b.on_update(msg(voice={"file_id": "v"}))
+    assert "не расслышал" in tg.sent[-1][1]
+    assert b.chats[7].lines == []
+
+
+def test_reply_to_nobody_asks_for_the_conversation(tmp_path):
+    b, tg = bot(tmp_path, "legit", ProposedAction("message:send", text="Жарайды, қазір жіберемін"))
+    b.on_update(msg(text="жібер"))
+    assert "О какой переписке" in tg.sent[-1][1]

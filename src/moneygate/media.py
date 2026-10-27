@@ -39,11 +39,13 @@ class MediaError(RuntimeError):
 class MetaMedia:
     def __init__(self, api_key: str, base_url: str = "https://api.meta.ai/v1",
                  vision_model: str = "muse-spark-1.3",
-                 asr_model: str = "muse-voice-transcribe-1.0", timeout: float = 120.0) -> None:
+                 asr_model: str = "muse-voice-transcribe-1.0", timeout: float = 120.0,
+                 audio_model: str = "muse-spark-1.2") -> None:  # 1.3 does not take audio yet
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.vision_model = vision_model
         self.asr_model = asr_model
+        self.audio_model = audio_model
         self.timeout = timeout
 
     @classmethod
@@ -84,9 +86,26 @@ class MetaMedia:
         return text
 
     def transcribe(self, audio: bytes) -> str:
+        """Muse Voice Transcribe first; Muse Spark 1.2 audio when it hears too little.
+
+        Muse Voice Transcribe handles Russian well but not Kazakh, which is outside its
+        25 languages: a 9-second Kazakh note came back empty. Fewer than ~3 characters per
+        second of audio means it missed most of the speech.
+        """
         wav = audio if audio[:4] == b"RIFF" else to_wav(audio)
+        seconds = max(0.0, (len(wav) - 44) / 48_000)  # 24 kHz, 16-bit, mono
+        text = ""
+        try:
+            text = self._asr_with_hint(wav)
+        except MediaError:
+            pass
+        if len(text) >= max(8, 3 * seconds):
+            return text
+        heard = self._spark_audio(wav)
+        return heard if len(heard) > len(text) else text
+
+    def _asr_with_hint(self, wav: bytes) -> str:
         settings = {"mode": "PUSH_TO_TALK", "model": self.asr_model, "audioEncoding": "WAV",
-                    # Not in the 25 evaluated languages, but recognised; the hint helps code-switching.
                     "languageBias": ["Russian", "Kazakh"]}
         try:
             return self._asr(wav, settings)
@@ -95,6 +114,21 @@ class MetaMedia:
                 raise
             settings.pop("languageBias")  # an unsupported hint must not cost the transcript
             return self._asr(wav, settings)
+
+    def _spark_audio(self, wav: bytes) -> str:
+        body = {
+            "model": self.audio_model,
+            "max_tokens": 4000,
+            "reasoning_effort": "low",
+            "messages": [{"role": "user", "content": [
+                {"type": "text", "text": "Transcribe this voice message word for word in its original "
+                                         "language (Kazakh, Russian or a mix). Write numbers as digits. "
+                                         "Return only the transcript."},
+                {"type": "input_audio", "input_audio": {"data": base64.b64encode(wav).decode(), "format": "wav"}},
+            ]}],
+        }
+        payload = self._post("/chat/completions", json.dumps(body).encode("utf-8"), "application/json")
+        return (payload["choices"][0]["message"].get("content") or "").strip()
 
     def _asr(self, wav: bytes, settings: dict) -> str:
         boundary = uuid.uuid4().hex

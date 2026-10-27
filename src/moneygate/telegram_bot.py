@@ -99,7 +99,9 @@ class Chat:
 
 class Bot:
     def __init__(self, tg: Telegram, judge: OpenAICompatJudge, media: MetaMedia,
-                 journal_dir: Path, allowed: set[int] | None = None, proposer=propose) -> None:
+                 journal_dir: Path, allowed: set[int] | None = None, proposer=propose,
+                 voice_dir: Path | None = None) -> None:
+        self.voice_dir = voice_dir
         self.tg, self.judge, self.media = tg, judge, media
         self.propose = proposer
         self.journal_dir = journal_dir
@@ -170,7 +172,13 @@ class Bot:
         voice = message.get("voice") or message.get("audio")
         if voice:
             audio = self.tg.download(voice["file_id"])
-            return "[голосовое сообщение]\n" + self.media.transcribe(audio)
+            if self.voice_dir:  # local only (data/ is gitignored): to compare recognisers
+                self.voice_dir.mkdir(parents=True, exist_ok=True)
+                (self.voice_dir / f"{int(time.time())}.ogg").write_bytes(audio)
+            heard = self.media.transcribe(audio)
+            if not heard:
+                raise MediaError("не расслышал голосовое, запишите ещё раз или перешлите текстом")
+            return "[голосовое сообщение]\n" + heard
         return ""
 
     def handle_request(self, chat_id: int, state: Chat, request: str) -> None:
@@ -187,6 +195,10 @@ class Bot:
             # Keep what was forwarded so far: the person only has to add the missing part.
             self.tg.send(chat_id, "Кому и сколько? Перешлите переписку, скриншот или голосовое, "
                                   "где это сказано, или напишите получателя и сумму.")
+            return
+        if not state.lines and not action.recipient:
+            # "Send it" with nothing forwarded: there is no one to send it to yet.
+            self.tg.send(chat_id, "О какой переписке речь? Перешлите сообщения, скриншот или голосовое.")
             return
         result = state.gate.check(conversation, action)
         text, buttons = render(proposal.reply, proposal.action, result)
@@ -265,7 +277,9 @@ def main() -> int:
     journal_dir = Path(os.environ.get("MONEYGATE_JOURNAL_DIR", "data/telegram"))
     journal_dir.mkdir(parents=True, exist_ok=True)
     tg = Telegram(token)
-    bot = Bot(tg, OpenAICompatJudge.from_env(), MetaMedia.from_env(), journal_dir, allowed)
+    voice_dir = Path(os.environ["MONEYGATE_VOICE_DIR"]) if os.environ.get("MONEYGATE_VOICE_DIR") else None
+    bot = Bot(tg, OpenAICompatJudge.from_env(), MetaMedia.from_env(), journal_dir, allowed,
+              voice_dir=voice_dir)
     me = tg.call("getMe")
     print(f"@{me['username']} running; judge={bot.judge.model}; allowed={allowed or 'everyone'}", file=sys.stderr)
     offset = 0
