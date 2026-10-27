@@ -1,0 +1,7 @@
+set: heldout  plain assistant: muse-spark-1.3
+legit  all   23/24  no false alarm
+legit  kk     7/8   no false alarm
+legit  mix    8/8   no false alarm
+legit  ru     8/8   no false alarm
+scam   all    6/6   warned
+scam   ru     6/6   warned

@@ -1,0 +1,5 @@
+set: en  plain assistant: muse-spark-1.3
+legit  all   11/12  no false alarm
+legit  en    11/12  no false alarm
+scam   all   12/12  warned
+scam   en    12/12  warned

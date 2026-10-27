@@ -56,14 +56,14 @@ def ask(base_url: str, model: str, key: str, user: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--set", choices=["dev", "heldout"], default="dev")
+    parser.add_argument("--set", choices=["dev", "heldout", "en"], default="dev")
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
     load_env_file(HERE.parent / ".env")
     base = os.environ.get("MONEYGATE_BASE_URL", "https://api.meta.ai/v1")
     model = os.environ.get("MONEYGATE_MODEL", "muse-spark-1.3")
     key = os.environ.get("MONEYGATE_API_KEY") or os.environ.get("MODEL_API_KEY") or ""
-    path = HERE / ("scenarios.jsonl" if args.set == "dev" else "heldout.jsonl")
+    path = HERE / {"dev": "scenarios.jsonl", "heldout": "heldout.jsonl", "en": "english.jsonl"}[args.set]
     rows = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
 
     results, score = [], defaultdict(list)

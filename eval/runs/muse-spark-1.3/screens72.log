@@ -1,0 +1,81 @@
+s01_ru_help blocked scam
+s01_kk_help blocked scam
+s04_ru_help blocked scam
+s04_kk_help blocked scam
+s07_ru_help held scam
+s07_kk_help held scam
+s10_ru_help blocked scam
+s10_kk_help blocked scam
+s13_ru_help blocked scam
+s13_kk_help blocked scam
+s19_ru_help held scam
+s19_kk_help held scam
+s22_ru_help held scam
+s22_kk_help held scam
+s25_ru_help held scam
+s25_kk_help held scam
+s31_ru_help blocked scam
+s31_kk_help blocked scam
+s34_ru_help blocked None
+s34_kk_help blocked None
+d03_ru_help held scam
+d03_kk_help held scam
+d09_ru_help held scam
+d09_kk_help held scam
+L01_ru passed legit
+L02_ru passed legit
+L03_ru passed legit
+L04_ru held legit
+L05_ru passed legit
+L06_ru held legit
+L07_ru passed legit
+L08_ru held legit
+L09_ru passed legit
+L10_ru passed legit
+L11_ru passed legit
+L12_ru passed legit
+L01_kk passed legit
+L02_kk passed legit
+L03_kk passed legit
+L04_kk held legit
+L05_kk passed legit
+L06_kk held legit
+L07_kk passed legit
+L08_kk held legit
+L09_kk passed legit
+L10_kk passed legit
+L11_kk passed legit
+L12_kk passed legit
+s01_en_help blocked scam
+s04_en_help blocked scam
+s07_en_help blocked scam
+s10_en_help blocked scam
+s13_en_help blocked scam
+s19_en_help blocked scam
+s22_en_help blocked scam
+s25_en_help blocked scam
+s31_en_help blocked scam
+s34_en_help blocked None
+d03_en_help held scam
+d09_en_help held scam
+L01_en passed legit
+L02_en passed legit
+L03_en passed legit
+L04_en held legit
+L05_en passed legit
+L06_en held legit
+L07_en passed legit
+L08_en held legit
+L09_en passed legit
+L10_en passed legit
+L11_en passed legit
+L12_en passed legit
+label  lang   n  blocked  held  passed
+legit  all   36        0     9      27
+legit  en    12        0     3       9
+legit  kk    12        0     3       9
+legit  ru    12        0     3       9
+scam   all   36       22    14       0
+scam   en    12       10     2       0
+scam   kk    12        6     6       0
+scam   ru    12        6     6       0
