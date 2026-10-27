@@ -191,13 +191,14 @@ class Bot:
             self.tg.send(chat_id, f"Ассистент не ответил: {exc}")
             return
         action = proposal.action
-        if action.type == "pay:transfer" and not (action.recipient and action.amount_kzt):
-            # Keep what was forwarded so far: the person only has to add the missing part.
+        # Nothing forwarded and nothing concrete asked: there is nothing to check yet.
+        # With a conversation, the gate decides even if the recipient is missing: a voice
+        # note "send 50 000, tell no one" has no card number and is still a scam to stop.
+        if not state.lines and action.type == "pay:transfer" and not (action.recipient and action.amount_kzt):
             self.tg.send(chat_id, "Кому и сколько? Перешлите переписку, скриншот или голосовое, "
                                   "где это сказано, или напишите получателя и сумму.")
             return
         if not state.lines and not action.recipient:
-            # "Send it" with nothing forwarded: there is no one to send it to yet.
             self.tg.send(chat_id, "О какой переписке речь? Перешлите сообщения, скриншот или голосовое.")
             return
         result = state.gate.check(conversation, action)

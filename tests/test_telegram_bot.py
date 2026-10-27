@@ -115,3 +115,10 @@ def test_reply_to_nobody_asks_for_the_conversation(tmp_path):
     b, tg = bot(tmp_path, "legit", ProposedAction("message:send", text="Жарайды, қазір жіберемін"))
     b.on_update(msg(text="жібер"))
     assert "О какой переписке" in tg.sent[-1][1]
+
+
+def test_voice_without_card_still_goes_to_the_gate(tmp_path):
+    b, tg = bot(tmp_path, "scam", ProposedAction("pay:transfer", amount_kzt=50_000))
+    b.on_update(msg(voice={"file_id": "v"}))
+    b.on_update(msg(text="жібер"))
+    assert "ОСТАНОВЛЕНО" in tg.sent[-1][1]
