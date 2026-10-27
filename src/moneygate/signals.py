@@ -22,10 +22,13 @@ _PATTERNS: dict[str, re.Pattern[str]] = {
         r"(?:message|text) me on (?:whatsapp|telegram)"),
     "urgency": re.compile(
         r"срочно|немедленно|в течение (?:часа|\d+ минут)|сегодня до|иначе (?:заблок|спиш|аннулир)|"
-        r"шұғыл|тез арада|дереу|urgent|immediately|within (?:an hour|\d+ minutes)"),
+        r"шұғыл|тез арада|дереу|urgent|immediately|within (?:an hour|\d+ minutes)|"
+        r"\bтез [\d\s]+ ?мын|\bшугыл"),
     "secrecy": re.compile(
         r"никому не (?:говори|сообща)|(?:папе|маме|родным) (?:пока )?не говори|не звони на (?:старый|мой)|"
-        r"ешкімге айтпа|әкеңе айтпа|don'?t tell anyone"),
+        r"ешкімге айтпа|әкеңе айтпа|don'?t tell anyone|"
+        # Plain-letter forms: speech recognisers often drop Kazakh letters ("екиме айтпа").
+        r"\bеш\w* айтпа|\bеки?ме айтпа|\bаке\w* айтпа|\bпапа\w* айтпа"),
     "code_request": re.compile(
         r"код из смс|(?:назови|продиктуй|сообщи|скажи)\w* (?:мне )?код|кодты (?:айт|жібер)|"
         r"смс-код|(?:tell|send) me the code|one-time code|otp"),
@@ -39,8 +42,12 @@ _PATTERNS: dict[str, re.Pattern[str]] = {
         r"қосымша табыс|күніне [\d\s]+|тәжірибе қажет емес|easy money|no experience needed"),
     "new_number": re.compile(
         r"с номера (?:друга|подруги)|телефон (?:разбил|сломал|утопил)|это мой новый номер|"
-        r"досымның нөмір|телефоным сынды|new number"),
+        r"досымның нөмір|телефоным сынды|new number|"
+        r"\bдос\w* ном\w*|жана ном\w*|телефон\w* сын"),
 }
+
+# Kazakh letters -> the Russian ones a recogniser or a hurried typist writes instead.
+_KAZAKH_TO_PLAIN = str.maketrans("әғқңөұүһі", "агкноуухи")
 
 # Signals that on their own are enough to stop money moving without a person.
 HARD = frozenset({"code_request", "safe_account", "secrecy", "new_number"})
@@ -49,7 +56,8 @@ HARD = frozenset({"code_request", "safe_account", "secrecy", "new_number"})
 def find_signals(text: str) -> list[str]:
     """Codes of the red flags present in the text, in a stable order."""
     low = text.lower()
-    found = [code for code, rx in _PATTERNS.items() if rx.search(low)]
+    plain = low.translate(_KAZAKH_TO_PLAIN)
+    found = [code for code, rx in _PATTERNS.items() if rx.search(low) or rx.search(plain)]
     if any(c.startswith("card:") for c in extract_contacts(text)):
         found.append("card_in_message")
     return found
