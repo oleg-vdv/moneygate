@@ -95,3 +95,9 @@ def test_mask_cards():
     from moneygate.telegram_bot import mask_cards
     assert mask_cards("на карту 4400 4302 1187 6650 сегодня") == "на карту *6650 сегодня"
     assert mask_cards("сумма 85 000 ₸, л/с 1023344") == "сумма 85 000 ₸, л/с 1023344"
+
+
+def test_vague_request_asks_whom_and_how_much(tmp_path):
+    b, tg = bot(tmp_path, "legit", ProposedAction("pay:transfer"))
+    b.on_update(msg(text="помоги перевести ему деньги"))
+    assert "Кому и сколько" in tg.sent[-1][1]

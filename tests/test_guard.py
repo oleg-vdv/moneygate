@@ -118,3 +118,9 @@ def test_model_alone_cannot_block_without_a_red_flag(tmp_path):
     result = gate(tmp_path, FakeJudge("scam")).check(
         UTILITY, ProposedAction("pay:transfer", "Kaspi Платежи: Alseco", 12_400))
     assert result.decision is Decision.AWAIT_HUMAN
+
+
+def test_transfer_without_recipient_or_amount_goes_to_a_person(tmp_path):
+    g = gate(tmp_path, FakeJudge("legit"))
+    assert g.check("помоги перевести ему деньги", ProposedAction("pay:transfer")).decision is Decision.AWAIT_HUMAN
+    assert g.check(UTILITY, ProposedAction("pay:transfer", amount_kzt=12_400)).decision is Decision.AWAIT_HUMAN

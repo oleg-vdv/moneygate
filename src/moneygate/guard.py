@@ -79,6 +79,12 @@ class MoneyGate:
 
         decision, reason = decide(mandate_decision, mandate_reason, verdict, signals)
 
+        # A payment to nobody in particular, or of no stated amount, is not something
+        # anyone has checked: the judge saw nothing to object to because there was nothing.
+        if decision is Decision.ALLOW and action.type == "pay:transfer" and not (
+                action.recipient and action.amount_kzt):
+            decision, reason = Decision.AWAIT_HUMAN, "recipient or amount unknown; a person decides"
+
         if decision is Decision.ALLOW and action.amount_kzt:
             if action.amount_kzt > self.mandate.remaining("amount_kzt"):
                 decision, reason = Decision.AWAIT_HUMAN, "over the remaining daily limit; a person decides"

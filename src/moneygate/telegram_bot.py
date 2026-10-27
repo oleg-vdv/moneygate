@@ -123,6 +123,8 @@ class Bot:
         if not message:
             return
         chat_id = message["chat"]["id"]
+        kind = next((k for k in ("photo", "voice", "audio", "document", "text") if k in message), "other")
+        print(f"chat {chat_id}: {kind}", file=sys.stderr, flush=True)
         if self.allowed is not None and chat_id not in self.allowed:
             self.tg.send(chat_id, f"Этот бот закрыт для демо. Ваш chat id: {chat_id}")
             return
@@ -180,7 +182,13 @@ class Bot:
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError, ValueError) as exc:
             self.tg.send(chat_id, f"Ассистент не ответил: {exc}")
             return
-        result = state.gate.check(conversation, proposal.action)
+        action = proposal.action
+        if action.type == "pay:transfer" and not (action.recipient and action.amount_kzt):
+            # Keep what was forwarded so far: the person only has to add the missing part.
+            self.tg.send(chat_id, "Кому и сколько? Перешлите переписку, скриншот или голосовое, "
+                                  "где это сказано, или напишите получателя и сумму.")
+            return
+        result = state.gate.check(conversation, action)
         text, buttons = render(proposal.reply, proposal.action, result)
         if result.decision is Decision.AWAIT_HUMAN:
             key = result.record_hash[-12:] if result.record_hash else str(int(time.time()))
