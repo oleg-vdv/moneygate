@@ -48,6 +48,18 @@ python -m moneygate.cli check chat.txt --type pay:transfer --to "+7 776 000 30 1
 python -m moneygate.cli check chat.txt --type pay:transfer --amount 5000 --fake legit   # offline
 ```
 
+As an MCP server, for any agent (Claude Desktop, Claude Code, any MCP client): one tool,
+`check_action(conversation, action_type, recipient?, amount_kzt?, text?)`, returning
+`allow` / `deny` / `await_human` with advice. The agent acts only on `allow`.
+
+```json
+{"mcpServers": {"moneygate": {"command": "python", "args": ["-m", "moneygate.mcp_server"],
+  "cwd": "/path/to/moneygate", "env": {"PYTHONPATH": "src"}}}}
+```
+
+Settings come from the environment or `./.env` (gitignored). `MONEYGATE_FAKE=scam` runs it
+offline with a fixed verdict.
+
 Evaluation:
 
 ```bash

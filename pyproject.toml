@@ -8,6 +8,7 @@ dependencies = ["kepil>=0.3.2"]
 
 [project.scripts]
 moneygate = "moneygate.cli:main"
+moneygate-mcp = "moneygate.mcp_server:main"
 
 [tool.pytest.ini_options]
 # ../kepil/src lets the tests run against the local Kepil checkout without installing it.

@@ -1,7 +1,7 @@
 """The scam judge: an LLM reads the conversation and the proposed action.
 
 Any OpenAI-compatible Chat Completions endpoint works. Muse Spark:
-  base_url = https://api.meta.ai/v1, model = muse-spark-1.1, key = MODEL_API_KEY
+  base_url = https://api.meta.ai/v1, model = muse-spark-1.3, key = MODEL_API_KEY
 Local open-weights (Ollama, llama.cpp server, vLLM):
   base_url = http://<host>:11434/v1, model = <name>, key = anything
 
@@ -148,12 +148,14 @@ class OpenAICompatJudge:
     def from_env(cls) -> "OpenAICompatJudge":
         """MONEYGATE_BASE_URL / MONEYGATE_MODEL / MONEYGATE_API_KEY; Meta Model API by default."""
         load_env_file()
+        base_url = os.environ.get("MONEYGATE_BASE_URL", "https://api.meta.ai/v1")
         return cls(
-            base_url=os.environ.get("MONEYGATE_BASE_URL", "https://api.meta.ai/v1"),
-            model=os.environ.get("MONEYGATE_MODEL", "muse-spark-1.1"),
+            base_url=base_url,
+            model=os.environ.get("MONEYGATE_MODEL", "muse-spark-1.3"),
             api_key=os.environ.get("MONEYGATE_API_KEY") or os.environ.get("MODEL_API_KEY"),
             json_mode=os.environ.get("MONEYGATE_JSON_MODE", "1") != "0",
-            max_tokens=int(os.environ.get("MONEYGATE_MAX_TOKENS", "1000")),
+            # Muse Spark reasons first (~1000 tokens) and then writes the JSON.
+            max_tokens=int(os.environ.get("MONEYGATE_MAX_TOKENS") or (4000 if "api.meta.ai" in base_url else 1000)),
             timeout=float(os.environ.get("MONEYGATE_TIMEOUT", "120")),
         )
 
@@ -183,7 +185,11 @@ class OpenAICompatJudge:
             try:
                 with urllib.request.urlopen(request, timeout=self.timeout) as response:
                     payload = json.loads(response.read().decode("utf-8"))
-                text = payload["choices"][0]["message"]["content"] or ""
+                choice = payload["choices"][0]
+                text = choice["message"]["content"] or ""
+                if not text and choice.get("finish_reason") == "length":
+                    return Verdict("error", model=self.model,
+                                   error=f"max_tokens={self.max_tokens} spent before the answer")
                 return parse_verdict(text, model=self.model)
             except (urllib.error.URLError, ConnectionError, TimeoutError, KeyError,
                     IndexError, json.JSONDecodeError) as exc:

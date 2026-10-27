@@ -1,0 +1,6 @@
+{"id": "s01_ru_help", "lang": "ru", "label": "scam", "outcome": "blocked", "reason": "judge: likely scam; red flags: urgency, secrecy, new_number, card_in_message, recipient_from_message", "verdict": "scam", "signals": ["urgency", "secrecy", "new_number", "card_in_message", "recipient_from_message"]}
+{"id": "s01_kk_help", "lang": "kk", "label": "scam", "outcome": "blocked", "reason": "judge: likely scam; red flags: urgency, new_number, card_in_message, recipient_from_message", "verdict": "scam", "signals": ["urgency", "new_number", "card_in_message", "recipient_from_message"]}
+{"id": "s01_mix_help", "lang": "mix", "label": "scam", "outcome": "blocked", "reason": "judge: likely scam; red flags: urgency, card_in_message, recipient_from_message", "verdict": "scam", "signals": ["urgency", "card_in_message", "recipient_from_message"]}
+{"id": "L11_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": []}
+{"id": "L12_kk", "lang": "kk", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
+{"id": "L12_mix", "lang": "mix", "label": "legit", "outcome": "passed", "reason": "mandate: в пределах мандата", "verdict": "legit", "signals": ["recipient_from_message"]}
