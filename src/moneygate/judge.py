@@ -17,7 +17,18 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Protocol
+
+
+def load_env_file(path: Path = Path(".env")) -> None:
+    """KEY=value lines from ./.env; variables already set in the environment win."""
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        key, sep, value = line.partition("=")
+        if sep and key.strip() and not key.lstrip().startswith("#"):
+            os.environ.setdefault(key.strip(), value.strip().strip('"'))
 
 from .actions import ProposedAction
 
@@ -136,6 +147,7 @@ class OpenAICompatJudge:
     @classmethod
     def from_env(cls) -> "OpenAICompatJudge":
         """MONEYGATE_BASE_URL / MONEYGATE_MODEL / MONEYGATE_API_KEY; Meta Model API by default."""
+        load_env_file()
         return cls(
             base_url=os.environ.get("MONEYGATE_BASE_URL", "https://api.meta.ai/v1"),
             model=os.environ.get("MONEYGATE_MODEL", "muse-spark-1.1"),
