@@ -17,3 +17,8 @@ The bot is open to everyone within a budget of model calls per UTC day
 (`MONEYGATE_DAILY_PER_CHAT=40`, `MONEYGATE_DAILY_TOTAL=800`). Commands such as `/help` and
 forwarded text cost nothing; a request, a screenshot or a voice note costs one.
 Journals live in `/tmp` and reset on every deploy: this is a demo, not a ledger.
+
+## Without a card: this PC
+
+`scripts/run_bot.cmd` runs the bot and restarts it if it stops. Put a shortcut to it in`nthe Startup folder (Win+R, `shell:startup`) and turn off sleep while plugged in.
+
