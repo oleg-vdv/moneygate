@@ -143,3 +143,22 @@ def test_language_follows_own_words_and_commands(tmp_path):
     b.on_update(msg(text="/en"))
     b.on_update(msg(text="/new"))
     assert tg.sent[-1][1].startswith("Starting over")
+
+
+def test_daily_quota_stops_model_calls_but_not_the_owner(tmp_path):
+    from moneygate.telegram_bot import Quota
+    tg = FakeTelegram()
+    b = Bot(tg, FakeJudge("scam"), FakeMedia(), tmp_path, None, proposer(PAY),
+            quota=Quota(per_chat=1, total=3, unlimited={1}))
+    b.on_update(msg(photo=[{"file_id": "x"}]))
+    b.on_update(msg(text="send it"))
+    assert "today's demo limit" in tg.sent[-1][1]
+    b.on_update(msg(text="/help"))  # commands cost nothing and still answer
+    assert "MoneyGate" in tg.sent[-1][1]
+    for _ in range(5):
+        b.on_update(msg(chat_id=1, text="send it"))
+    assert "limit" not in tg.sent[-1][1]
+    b.on_update(msg(chat_id=8, text="send it"))
+    b.on_update(msg(chat_id=9, text="send it"))
+    b.on_update(msg(chat_id=10, text="send it"))
+    assert "overall limit" in tg.sent[-1][1]

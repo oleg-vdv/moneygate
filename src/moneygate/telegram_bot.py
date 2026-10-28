@@ -10,6 +10,9 @@ Advice comes from the judge in the language of the conversation, Kazakh included
 
   TELEGRAM_BOT_TOKEN=...            # from @BotFather, in ./.env
   TELEGRAM_ALLOWED_CHATS=123,456    # optional: who may use it (every message costs API calls)
+  MONEYGATE_DAILY_PER_CHAT=40       # optional, for an open bot: model calls per chat per day
+  MONEYGATE_DAILY_TOTAL=800         # optional: model calls per day for everyone together
+  MONEYGATE_UNLIMITED_CHATS=123     # optional: chats the limits do not apply to
   python -m moneygate.telegram_bot
 
 Nothing is ever paid or sent: "allowed" means the assistant would now go ahead.
@@ -104,6 +107,8 @@ TEXT = {
         "human": "MoneyGate: решаете вы. Ассистент сам это делать не будет.",
         "screenshot": "скриншот", "voice": "голосовое сообщение", "request": "Просьба человека",
         "someone": "собеседник", "lang_set": "Язык: русский.",
+        "limit_chat": "На сегодня лимит демо для этого чата исчерпан. Попробуйте завтра.",
+        "limit_total": "Демо на сегодня исчерпало общий лимит запросов. Попробуйте завтра.",
     },
     "en": {
         "help": (
@@ -134,6 +139,8 @@ TEXT = {
         "human": "MoneyGate: your call. The assistant won't do this on its own.",
         "screenshot": "screenshot", "voice": "voice note", "request": "The person's request",
         "someone": "the other person", "lang_set": "Language: English.",
+        "limit_chat": "This chat has used today's demo limit. Please try again tomorrow.",
+        "limit_total": "The demo has used today's overall limit. Please try again tomorrow.",
     },
 }
 
@@ -176,6 +183,32 @@ class Telegram:
         return self.call("sendMessage", **params)
 
 
+class Quota:
+    """Model calls per chat and in total, per UTC day: an open demo bot must not burn the credits.
+
+    Chats in `unlimited` (the owner) are never counted. A limit of 0 means no limit.
+    """
+
+    def __init__(self, per_chat: int = 0, total: int = 0, unlimited: set[int] | None = None) -> None:
+        self.per_chat, self.total, self.unlimited = per_chat, total, unlimited or set()
+        self.day, self.used, self.used_total = "", {}, 0
+
+    def take(self, chat_id: int) -> str | None:
+        """None if the call may go ahead (and counts it); otherwise "chat" or "total"."""
+        if chat_id in self.unlimited:
+            return None
+        today = time.strftime("%Y-%m-%d", time.gmtime())
+        if today != self.day:
+            self.day, self.used, self.used_total = today, {}, 0
+        if self.total and self.used_total >= self.total:
+            return "total"
+        if self.per_chat and self.used.get(chat_id, 0) >= self.per_chat:
+            return "chat"
+        self.used[chat_id] = self.used.get(chat_id, 0) + 1
+        self.used_total += 1
+        return None
+
+
 @dataclass
 class Chat:
     lines: list[str] = field(default_factory=list)
@@ -188,8 +221,9 @@ class Chat:
 class Bot:
     def __init__(self, tg: Telegram, judge: OpenAICompatJudge, media: MetaMedia,
                  journal_dir: Path, allowed: set[int] | None = None, proposer=propose,
-                 voice_dir: Path | None = None) -> None:
+                 voice_dir: Path | None = None, quota: Quota | None = None) -> None:
         self.voice_dir = voice_dir
+        self.quota = quota or Quota()
         self.tg, self.judge, self.media = tg, judge, media
         self.propose = proposer
         self.journal_dir = journal_dir
@@ -242,6 +276,14 @@ class Bot:
             self.tg.send(chat_id, t["new"])
             return
 
+        costly = any(k in message for k in ("photo", "voice", "audio")) or bool(
+            str((message.get("document") or {}).get("mime_type", "")).startswith("image/")) or (
+            bool(text) and not forwarded)
+        if costly:
+            over = self.quota.take(chat_id)
+            if over:
+                self.tg.send(chat_id, t["limit_" + over])
+                return
         self.tg.call("sendChatAction", chat_id=chat_id, action="typing")
         try:
             got = self.read_media(message, t)
@@ -378,10 +420,14 @@ def main() -> int:
     journal_dir.mkdir(parents=True, exist_ok=True)
     tg = Telegram(token)
     voice_dir = Path(os.environ["MONEYGATE_VOICE_DIR"]) if os.environ.get("MONEYGATE_VOICE_DIR") else None
+    unlimited = {int(x) for x in os.environ.get("MONEYGATE_UNLIMITED_CHATS", "").split(",") if x.strip()}
+    quota = Quota(int(os.environ.get("MONEYGATE_DAILY_PER_CHAT", "0")),
+                  int(os.environ.get("MONEYGATE_DAILY_TOTAL", "0")), unlimited)
     bot = Bot(tg, OpenAICompatJudge.from_env(), MetaMedia.from_env(), journal_dir, allowed,
-              voice_dir=voice_dir)
+              voice_dir=voice_dir, quota=quota)
     me = tg.call("getMe")
-    print(f"@{me['username']} running; judge={bot.judge.model}; allowed={allowed or 'everyone'}", file=sys.stderr)
+    print(f"@{me['username']} running; judge={bot.judge.model}; allowed={allowed or 'everyone'}; "
+          f"daily per chat={quota.per_chat or '-'}, total={quota.total or '-'}", file=sys.stderr)
     offset = 0
     while True:
         try:

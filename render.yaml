@@ -1,0 +1,31 @@
+# Render Blueprint: the Telegram demo bot as an always-on background worker.
+# Long polling, so no port and no webhook; one instance only (Telegram allows one poller per token).
+# Secrets are marked sync: false and are typed into the Render dashboard, never into this file.
+services:
+  - type: worker
+    name: moneygate-telegram
+    runtime: python
+    plan: starter
+    region: frankfurt
+    buildCommand: pip install ".[bot]"
+    startCommand: moneygate-telegram
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: MONEYGATE_API_KEY
+        sync: false
+      - key: MONEYGATE_UNLIMITED_CHATS
+        sync: false
+      # Open to everyone (the judges), within a daily budget of model calls.
+      - key: TELEGRAM_ALLOWED_CHATS
+        value: ""
+      - key: MONEYGATE_DAILY_PER_CHAT
+        value: "40"
+      - key: MONEYGATE_DAILY_TOTAL
+        value: "800"
+      - key: MONEYGATE_JOURNAL_DIR
+        value: /tmp/moneygate
