@@ -20,5 +20,6 @@ Journals live in `/tmp` and reset on every deploy: this is a demo, not a ledger.
 
 ## Without a card: this PC
 
-`scripts/run_bot.cmd` runs the bot and restarts it if it stops. Put a shortcut to it in`nthe Startup folder (Win+R, `shell:startup`) and turn off sleep while plugged in.
+`scripts/run_bot.cmd` runs the bot and restarts it if it stops. Put a shortcut to it in
+the Startup folder (Win+R, `shell:startup`) and turn off sleep while plugged in.
 
