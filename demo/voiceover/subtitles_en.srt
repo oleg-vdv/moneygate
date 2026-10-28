@@ -1,0 +1,123 @@
+1
+00:00:00,050 --> 00:00:02,575
+Hi Mom, it's Arman, new number.
+
+2
+00:00:02,575 --> 00:00:06,300
+Send eighty-five thousand to my friend's card, don't tell Dad.
+
+3
+00:00:06,300 --> 00:00:09,450
+Every family in Kazakhstan has seen this message.
+
+4
+00:00:12,050 --> 00:00:16,238
+Now AI assistants are starting to pay bills and answer sellers for people.
+
+5
+00:00:16,238 --> 00:00:19,463
+When that message reaches an agent, who stops the payment?
+
+6
+00:00:19,462 --> 00:00:24,000
+This is MoneyGate: a safety gate for AI agents that move money.
+
+7
+00:00:25,050 --> 00:00:27,062
+The agent proposes one action.
+
+8
+00:00:27,062 --> 00:00:39,638
+Before it runs, MoneyGate checks it three ways: a mandate with limits and hard rules, like never giving out an SMS code; a Muse Spark judge; and red-flag rules in Russian, Kazakh and English.
+
+9
+00:00:39,638 --> 00:00:44,688
+Screenshots are read by Muse Spark, voice notes by Muse Voice Transcribe.
+
+10
+00:00:45,050 --> 00:00:47,062
+Here is the assistant in Telegram.
+
+11
+00:00:47,062 --> 00:00:50,000
+I forward the screenshot and ask it to send the money.
+
+12
+00:00:50,000 --> 00:00:53,512
+The agent proposes the transfer, exactly as asked.
+
+13
+00:00:53,512 --> 00:01:00,262
+MoneyGate stops it: someone on a new number, a card from the message, pressure to hurry, keep it secret.
+
+14
+00:01:15,050 --> 00:01:17,538
+The same scam as a voice note in Kazakh.
+
+15
+00:01:17,538 --> 00:01:23,125
+Meta's transcriber doesn't cover Kazakh yet, so MoneyGate falls back to Muse Spark audio.
+
+16
+00:01:23,125 --> 00:01:26,362
+Stopped again, and the advice comes back in Kazakh.
+
+17
+00:01:40,050 --> 00:01:42,262
+And an ordinary bill goes straight through.
+
+18
+00:01:42,262 --> 00:01:45,125
+A gate that blocks everything is useless.
+
+19
+00:01:55,050 --> 00:01:58,262
+Every decision is written to a hash-chained journal.
+
+20
+00:01:58,262 --> 00:02:03,925
+An independent tool verifies it, and if anyone edits a single record, the chain breaks.
+
+21
+00:02:15,050 --> 00:02:15,988
+We measured it.
+
+22
+00:02:15,988 --> 00:02:20,525
+Muse Spark already knows scams: in plain chat it warns every time.
+
+23
+00:02:20,525 --> 00:02:22,763
+But agents don't chat, they act.
+
+24
+00:02:22,762 --> 00:02:27,675
+An agent that does what it's asked would lose money in forty-six of forty-eight cases.
+
+25
+00:02:27,675 --> 00:02:32,675
+Even Muse Spark as the agent agreed once, to a Kazakh marketplace prepayment.
+
+26
+00:02:32,675 --> 00:02:37,150
+A small on-device model warns in nine of thirty-six, never in Kazakh.
+
+27
+00:02:37,150 --> 00:02:41,675
+With MoneyGate: every scam stopped, no legitimate request blocked.
+
+28
+00:02:45,050 --> 00:02:47,800
+Any agent can call MoneyGate over MCP.
+
+29
+00:02:47,800 --> 00:02:52,588
+Muse Spark knows the scam; MoneyGate makes it a check no agent can skip.
+
+30
+00:02:52,588 --> 00:02:53,588
+Try the bot.
+
+31
+00:02:53,588 --> 00:02:55,175
+The code is on GitHub.

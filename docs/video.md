@@ -19,8 +19,8 @@
 | 1:15–1:40 | Telegram: `/new`, своё голосовое на казахском (сын, новый номер, «әкеңе айтпа») → `жібер` → STOPPED, совет на казахском | The same scam as a voice note in Kazakh. Meta's transcriber doesn't cover Kazakh yet, so MoneyGate falls back to Muse Spark audio. Stopped again, and the advice comes back in Kazakh. |
 | 1:40–1:55 | Telegram: `/new`, `pay my internet bill, 6 990 tenge to Beeline account 2154 8890` → allowed | And an ordinary bill goes straight through. A gate that blocks everything is useless. |
 | 1:55–2:15 | Терминал: `npx proofbyte-agent-trace verify data/telegram/<id>.jsonl` → «Integrity confirmed»; затем копия с правкой одной записи → «Integrity BROKEN» | Every decision is written to a hash-chained journal. An independent tool verifies it, and if anyone edits a single record, the chain breaks. |
-| 2:15–2:40 | Слайд 3 | We measured it. Muse Spark already knows scams: in plain chat it warns every time. But agents don't chat, they act. An agent that does what it's asked would lose money in 46 of 48 cases. Even Muse Spark as the agent agreed once, to a Kazakh marketplace prepayment. A small on-device model warns in 9 of 36, never in Kazakh. With MoneyGate: every scam stopped, no legitimate request blocked. |
-| 2:40–3:00 | Слайд 4 | Any agent can call MoneyGate over MCP. Muse Spark knows the scam; MoneyGate makes it a check no agent can skip. Try the bot, the code is on GitHub. |
+| 2:15–2:45 | Слайд 3 | We measured it. Muse Spark already knows scams: in plain chat it warns every time. But agents don't chat, they act. An agent that does what it's asked would lose money in 46 of 48 cases. Even Muse Spark as the agent agreed once, to a Kazakh marketplace prepayment. A small on-device model warns in 9 of 36, never in Kazakh. With MoneyGate: every scam stopped, no legitimate request blocked. |
+| 2:45–3:00 | Слайд 4 | Any agent can call MoneyGate over MCP. Muse Spark knows the scam; MoneyGate makes it a check no agent can skip. Try the bot, the code is on GitHub. |
 
 ## Подготовка кадров
 
@@ -43,3 +43,8 @@
 - Номера карт и телефонов в кадре только выдуманные (из `demo/`).
 - Ссылка на репозиторий в конце видео заработает, только когда он станет публичным
   (решение Олега, до 02.11).
+
+## Озвучка синтезом
+
+`python demo/make_voiceover.py demo/voiceover` (голос en-US-AndrewNeural через edge-tts). Готовое:`n`demo/voiceover/voiceover_full.mp3` – одна дорожка ровно 3:00, каждая фраза стоит в начале своей сцены, её можно класть под видео целиком; `NN_XXXs.mp3` – те же фразы по сценам (XXX – секунда начала); `subtitles_en.srt` – английские субтитры с тем же таймингом. Если сцена в записи вышла длиннее или короче, двигать отдельный файл сцены, а не всю дорожку.
+
