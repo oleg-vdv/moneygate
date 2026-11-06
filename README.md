@@ -189,7 +189,10 @@ red-flag rules, eval harness, tests.
 Built during the Meta Global AI Developer Hackathon (26 Oct – 4 Nov 2026): see
 [docs/plan.md](docs/plan.md). The git tag `hackathon-start` marks the repo as it was when
 the hackathon began; `git log hackathon-start..` lists everything built during it.
+The tag `hackathon-end` marks the last code change before the submission deadline; commits after it only
+add the license and tidy repository documents.
 
 ## License
 
-MIT. Kepil is AGPL-3.0 and used as a dependency.
+MoneyGate's own code is under the [MIT License](LICENSE). It depends on Kepil, which is AGPL-3.0-or-later,
+so a distribution or network service that includes Kepil must also meet the AGPL terms for that part.
